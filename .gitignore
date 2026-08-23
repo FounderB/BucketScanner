@@ -51,6 +51,6 @@ authorized_key.json
 *.sarif
 bucket-scanner-report.*
 
-# OS
-.DS_Store
-Thumbs.db
+# Local-only drafts (not published to GitHub)
+local/
+docs/HABR.md
