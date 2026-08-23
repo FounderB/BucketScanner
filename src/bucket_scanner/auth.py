@@ -81,6 +81,8 @@ def resolve_credentials(
         return resolve_aws_credentials(region=region, profile=profile)
     if cloud == CloudProvider.AZURE:
         return resolve_azure_credentials()
+    if cloud == CloudProvider.GCS:
+        return resolve_gcs_credentials()
     return _resolve_yandex_credentials()
 
 
@@ -122,6 +124,15 @@ def resolve_azure_credentials() -> Credentials:
         tenant_id=tenant_id,
         folder_id=subscription_id,
         source="default-credential-chain",
+    )
+
+
+def resolve_gcs_credentials() -> Credentials:
+    project_id = _env("GCP_PROJECT", "GOOGLE_CLOUD_PROJECT", "GCLOUD_PROJECT")
+    return Credentials(
+        cloud=CloudProvider.GCS,
+        folder_id=project_id,
+        source="application-default-credentials",
     )
 
 

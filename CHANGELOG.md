@@ -2,6 +2,19 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [0.15.0] - 2026-08-23
+
+### Added
+
+- **GCS live scan** — project bucket inventory via `google-cloud-storage` + ADC
+- Optional extra: `pip install 'bucket-scanner[gcs]'`
+- Golden demo: [GOLDEN_DEMO.md](docs/GOLDEN_DEMO.md), [examples/golden-demo/](examples/golden-demo/)
+
+### Changed
+
+- All four clouds support live scan (YC, AWS, Azure, GCS)
+- `doctor --cloud gcs` validates SDK + project configuration
+
 ## [0.14.0] - 2026-08-23
 
 ### Added

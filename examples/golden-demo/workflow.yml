@@ -1,0 +1,34 @@
+# Golden demo CI workflow
+
+name: Bucket Scanner golden demo
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: FounderB/BucketScanner/action@v0.15.0
+        with:
+          version: "0.15.0"
+          profile: yc-fixture
+          config-path: examples/ci/.bucket-scanner.toml
+          fail-on: high
+          sarif-path: bucket-scanner.sarif
+          json-path: bucket-scanner.json
+        continue-on-error: true
+      - name: Verify reports
+        run: |
+          test -s bucket-scanner.sarif
+          test -s bucket-scanner.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bucket-scanner-reports
+          path: |
+            bucket-scanner.sarif
+            bucket-scanner.json
