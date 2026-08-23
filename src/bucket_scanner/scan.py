@@ -168,6 +168,58 @@ def _collect_aws_data(
     return buckets, sa_keys, account_id
 
 
+def resolve_folder_ids(config: ScanConfig, folder_id: str | None = None) -> list[str]:
+    if folder_id:
+        return [folder_id]
+    if config.folder_ids:
+        return list(config.folder_ids)
+    if config.folder_id:
+        return [config.folder_id]
+    return []
+
+
+def _finalize_report(
+    *,
+    buckets: list[BucketSnapshot],
+    sa_keys: list[ServiceAccountKeySnapshot],
+    folder: str,
+    scope_ids: list[str],
+    report_cloud: str,
+    method: str,
+    probe: bool,
+    config: ScanConfig,
+    terraform_path: Path | None,
+    repo_path: Path | None,
+    tracefuse_report: Path | None,
+) -> ScanReport:
+    findings = []
+    for bucket in buckets:
+        findings.extend(check_bucket(bucket))
+    findings.extend(check_service_accounts(sa_keys, key_age_days=config.key_age_days))
+    if terraform_path:
+        findings.extend(diff_terraform(terraform_path, buckets))
+    if repo_path:
+        findings.extend(scan_repo(repo_path, cloud=config.cloud))
+    if tracefuse_report:
+        findings.extend(load_tracefuse_report(tracefuse_report))
+    findings = apply_overrides(findings, config.severity_overrides)
+    findings = [redact_finding(item) for item in findings]
+    chains = compose_chains(buckets, findings)
+    summary = _build_summary(findings, chains, buckets_scanned=len(buckets))
+    return ScanReport(
+        version=__version__,
+        cloud=report_cloud,
+        folder_id=folder,
+        scope_ids=scope_ids,
+        probe_enabled=probe,
+        buckets=buckets,
+        findings=findings,
+        chains=chains,
+        summary=summary,
+        method=method,
+    )
+
+
 def run_scan(
     *,
     folder_id: str | None,
@@ -208,13 +260,37 @@ def run_scan(
         method = "live"
         report_cloud = CloudProvider.AWS.value
     else:
-        if not folder_id:
-            raise ScanError("Provide --folder-id or --fixture.")
+        folder_ids = resolve_folder_ids(config, folder_id)
+        if not folder_ids:
+            raise ScanError("Provide --folder-id, folder_ids in config, or --fixture.")
         credentials = resolve_credentials(cloud=CloudProvider.YANDEX)
-        folder = folder_id
-        buckets, sa_keys = _collect_yandex_data(folder, credentials, probe=probe, ignore=ignore)
+        all_buckets: list[BucketSnapshot] = []
+        all_sa_keys: list[ServiceAccountKeySnapshot] = []
+        for fid in folder_ids:
+            buckets_part, keys_part = _collect_yandex_data(
+                fid,
+                credentials,
+                probe=probe,
+                ignore=ignore,
+            )
+            all_buckets.extend(buckets_part)
+            all_sa_keys.extend(keys_part)
+        folder = ",".join(folder_ids)
         method = "live"
         report_cloud = CloudProvider.YANDEX.value
+        return _finalize_report(
+            buckets=all_buckets,
+            sa_keys=all_sa_keys,
+            folder=folder,
+            scope_ids=folder_ids,
+            report_cloud=report_cloud,
+            method=method,
+            probe=probe,
+            config=config,
+            terraform_path=tf_path,
+            repo_path=repo,
+            tracefuse_report=tracefuse,
+        )
 
     findings = []
     for bucket in buckets:
@@ -230,11 +306,13 @@ def run_scan(
     findings = [redact_finding(item) for item in findings]
     chains = compose_chains(buckets, findings)
 
+    scope_ids = [folder] if folder else []
     summary = _build_summary(findings, chains, buckets_scanned=len(buckets))
     return ScanReport(
         version=__version__,
         cloud=report_cloud,
         folder_id=folder,
+        scope_ids=scope_ids,
         probe_enabled=probe,
         buckets=buckets,
         findings=findings,

@@ -21,7 +21,11 @@ def render_human(report: ScanReport, console: Console | None = None) -> None:
     out.print()
 
     scope_label = "account" if report.cloud == "aws" else "folder"
-    out.print(f"  cloud {report.cloud}  {scope_label} {report.folder_id}", style="dim")
+    if len(report.scope_ids) > 1:
+        scope_text = f"folders {', '.join(report.scope_ids)}"
+    else:
+        scope_text = f"{scope_label} {report.folder_id}"
+    out.print(f"  cloud {report.cloud}  {scope_text}", style="dim")
     out.print()
 
     score_bar = _score_bar(report.summary.score)

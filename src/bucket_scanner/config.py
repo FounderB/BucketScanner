@@ -13,6 +13,7 @@ from bucket_scanner.models import Severity
 @dataclass
 class ScanConfig:
     folder_id: str | None = None
+    folder_ids: list[str] = field(default_factory=list)
     cloud: CloudProvider = CloudProvider.YANDEX
     aws_region: str | None = None
     aws_profile: str | None = None
@@ -29,6 +30,53 @@ class ScanConfig:
 
 
 @dataclass
+class ScanProfile:
+    name: str
+    cloud: CloudProvider = CloudProvider.YANDEX
+    folder_id: str | None = None
+    folder_ids: list[str] = field(default_factory=list)
+    aws_region: str | None = None
+    aws_profile: str | None = None
+    aws_scan_iam: bool = True
+    aws_resolve_regions: bool = True
+    probe: bool = False
+    fail_on: Severity | None = None
+    key_age_days: int | None = None
+    ignore_buckets: set[str] = field(default_factory=set)
+    terraform_path: Path | None = None
+    repo_path: Path | None = None
+    tracefuse_report: Path | None = None
+    fixture: Path | None = None
+
+    def apply_to(self, config: ScanConfig) -> None:
+        config.cloud = self.cloud
+        if self.folder_id:
+            config.folder_id = self.folder_id
+        if self.folder_ids:
+            config.folder_ids = list(self.folder_ids)
+        if self.aws_region:
+            config.aws_region = self.aws_region
+        if self.aws_profile:
+            config.aws_profile = self.aws_profile
+        config.aws_scan_iam = self.aws_scan_iam
+        config.aws_resolve_regions = self.aws_resolve_regions
+        if self.probe:
+            config.probe = True
+        if self.fail_on is not None:
+            config.fail_on = self.fail_on
+        if self.key_age_days is not None:
+            config.key_age_days = self.key_age_days
+        if self.ignore_buckets:
+            config.ignore_buckets = set(self.ignore_buckets)
+        if self.terraform_path:
+            config.terraform_path = self.terraform_path
+        if self.repo_path:
+            config.repo_path = self.repo_path
+        if self.tracefuse_report:
+            config.tracefuse_report = self.tracefuse_report
+
+
+@dataclass
 class NotifyConfig:
     webhook_url: str | None = None
     telegram_bot_token: str | None = None
@@ -40,6 +88,7 @@ class NotifyConfig:
 class ServeConfig:
     addr: str = "127.0.0.1:9090"
     interval_seconds: int = 0
+    profile: str | None = None
 
 
 @dataclass
@@ -47,6 +96,7 @@ class AppConfig:
     scan: ScanConfig = field(default_factory=ScanConfig)
     notify: NotifyConfig = field(default_factory=NotifyConfig)
     serve: ServeConfig = field(default_factory=ServeConfig)
+    profiles: dict[str, ScanProfile] = field(default_factory=dict)
 
 
 DEFAULT_CONFIG = """# Bucket Scanner configuration
@@ -54,6 +104,7 @@ DEFAULT_CONFIG = """# Bucket Scanner configuration
 
 [scan]
 folder_id = "b1gxxxxxxxxxx"
+# folder_ids = ["b1gfolder-a", "b1gfolder-b"]
 # cloud = "yandex"  # or "aws"
 # aws_region = "us-east-1"
 # aws_profile = "default"
@@ -66,10 +117,21 @@ key_age_days = 90
 names = ["public-assets-cdn"]
 
 # terraform_path = "terraform/"
-# repo scanning (Tracefuse-style cloud secret detection)
 # [repo]
 # path = "."
 # tracefuse_report = "tracefuse-report.json"
+
+# [[profiles]]
+# name = "aws-demo"
+# cloud = "aws"
+# fixture = "examples/demo-vulnerable/fixture-aws.toml"
+# terraform_path = "examples/demo-vulnerable/terraform-aws"
+# probe = false
+
+# [[profiles]]
+# name = "yc-prod"
+# folder_ids = ["b1gfolder-prod", "b1gfolder-backup"]
+# probe = true
 
 # [notify]
 # webhook_url = "https://hooks.example.com/bucket-scanner"
@@ -80,6 +142,7 @@ names = ["public-assets-cdn"]
 # [serve]
 # addr = "127.0.0.1:9090"
 # interval_seconds = 300
+# profile = "aws-demo"
 
 # [[scan.severity_overrides]]
 # rule = "versioning/disabled"
@@ -89,6 +152,30 @@ names = ["public-assets-cdn"]
 
 def _parse_severity(value: str) -> Severity:
     return Severity(value.lower())
+
+
+def _parse_profile(item: dict) -> ScanProfile:
+    ignore = item.get("ignore_buckets", {}).get("names", item.get("ignore_buckets", []))
+    if isinstance(ignore, dict):
+        ignore = ignore.get("names", [])
+    return ScanProfile(
+        name=item["name"],
+        cloud=CloudProvider.parse(item.get("cloud")),
+        folder_id=item.get("folder_id"),
+        folder_ids=list(item.get("folder_ids", [])),
+        aws_region=item.get("aws_region"),
+        aws_profile=item.get("aws_profile"),
+        aws_scan_iam=bool(item.get("aws_scan_iam", True)),
+        aws_resolve_regions=bool(item.get("aws_resolve_regions", True)),
+        probe=bool(item.get("probe", False)),
+        fail_on=_parse_severity(item["fail_on"]) if item.get("fail_on") else None,
+        key_age_days=int(item["key_age_days"]) if item.get("key_age_days") is not None else None,
+        ignore_buckets=set(ignore),
+        terraform_path=Path(item["terraform_path"]) if item.get("terraform_path") else None,
+        repo_path=Path(item["repo_path"]) if item.get("repo_path") else None,
+        tracefuse_report=Path(item["tracefuse_report"]) if item.get("tracefuse_report") else None,
+        fixture=Path(item["fixture"]) if item.get("fixture") else None,
+    )
 
 
 def load_config(path: Path | None = None) -> AppConfig:
@@ -109,10 +196,17 @@ def load_config(path: Path | None = None) -> AppConfig:
     repo_path = repo_data.get("path")
     tracefuse_report = repo_data.get("tracefuse_report")
     terraform_path = scan_data.get("terraform_path")
+    folder_ids = list(scan_data.get("folder_ids", []))
+
+    profiles: dict[str, ScanProfile] = {}
+    for item in data.get("profiles", []):
+        profile = _parse_profile(item)
+        profiles[profile.name] = profile
 
     return AppConfig(
         scan=ScanConfig(
             folder_id=scan_data.get("folder_id"),
+            folder_ids=folder_ids,
             cloud=CloudProvider.parse(scan_data.get("cloud")),
             aws_region=scan_data.get("aws_region"),
             aws_profile=scan_data.get("aws_profile"),
@@ -138,7 +232,9 @@ def load_config(path: Path | None = None) -> AppConfig:
         serve=ServeConfig(
             addr=serve_data.get("addr", "127.0.0.1:9090"),
             interval_seconds=int(serve_data.get("interval_seconds", 0)),
+            profile=serve_data.get("profile"),
         ),
+        profiles=profiles,
     )
 
 

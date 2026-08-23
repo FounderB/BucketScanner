@@ -97,6 +97,7 @@ class ScanReport(BaseModel):
     version: str
     cloud: str = "yandex"
     folder_id: str
+    scope_ids: list[str] = Field(default_factory=list)
     scanned_at: datetime = Field(default_factory=lambda: datetime.now(tz=UTC))
     probe_enabled: bool = False
     buckets: list[BucketSnapshot] = Field(default_factory=list)

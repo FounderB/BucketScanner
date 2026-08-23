@@ -44,7 +44,7 @@ def run_metrics_server(
     def refresh() -> None:
         try:
             report = run_scan(
-                folder_id=config.folder_id,
+                folder_id=None,
                 fixture=fixture,
                 config=config,
                 repo_path=config.repo_path,

@@ -2,6 +2,16 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [0.7.0] - 2026-08-23
+
+### Added
+
+- **Scan profiles** — `[[profiles]]` in `.bucket-scanner.toml`, `--profile`, `profiles list`
+- **`[serve] profile`** — scheduled metrics server picks a named profile
+- **YC multi-folder scan** — `folder_ids` in config or repeated `--folder-id`
+- `scope_ids` in JSON report; human output shows multiple folders
+- Grafana dashboard variables for `cloud` and `scope_id` labels
+
 ## [0.6.0] - 2026-08-23
 
 ### Added

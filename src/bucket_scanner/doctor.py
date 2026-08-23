@@ -24,8 +24,13 @@ def run_doctor(console: Console | None = None) -> int:
             out.print(f"[green]✓[/green] AWS region: {config.scan.aws_region}")
         if config.scan.aws_profile:
             out.print(f"[green]✓[/green] AWS profile: {config.scan.aws_profile}")
-    elif config.scan.folder_id:
-        out.print(f"[green]✓[/green] Config folder_id: {config.scan.folder_id}")
+    elif config.scan.folder_id or config.scan.folder_ids:
+        if config.scan.folder_ids:
+            out.print(
+                f"[green]✓[/green] Config folder_ids: {', '.join(config.scan.folder_ids)}"
+            )
+        else:
+            out.print(f"[green]✓[/green] Config folder_id: {config.scan.folder_id}")
     else:
         out.print(
             "[yellow]![/yellow] No folder_id in .bucket-scanner.toml "
