@@ -46,7 +46,7 @@ def test_doctor_missing_credentials(monkeypatch):
 
 @patch("bucket_scanner.doctor.load_config")
 @patch("bucket_scanner.doctor.resolve_credentials")
-@patch("bucket_scanner.doctor.YcManagementClient")
+@patch("bucket_scanner.yc.management.YcManagementClient")
 def test_doctor_ok(mock_client, mock_creds, mock_load_config):
     from bucket_scanner.cloud import CloudProvider
 

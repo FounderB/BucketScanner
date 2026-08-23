@@ -109,6 +109,8 @@ def diff_terraform(
             )
 
         findings.extend(_check_bpa_drift(intent, live_bucket, terraform_path))
+        findings.extend(_check_azure_drift(intent, live_bucket))
+        findings.extend(_check_gcs_drift(intent, live_bucket))
 
     return findings
 
@@ -151,3 +153,112 @@ def _check_bpa_drift(
             remediation="Apply Terraform or align live bucket Block Public Access with intent.",
         )
     ]
+
+
+def _check_azure_drift(intent, live_bucket: BucketSnapshot) -> list[Finding]:
+    if live_bucket.cloud != "azure":
+        return []
+    findings: list[Finding] = []
+    declared_access = (intent.container_access_type or "private").lower()
+    live_bpa = live_bucket.block_public_access or {}
+    live_public = str(live_bpa.get("public_access", "off")).lower()
+    if declared_access in {"private", "off"} and live_public in {"container", "blob"}:
+        findings.append(
+            Finding(
+                rule_id="iac/container-access-drift",
+                title="Terraform container access drift",
+                severity=Severity.CRITICAL,
+                message=(
+                    f"Terraform declares '{intent.bucket}' as private "
+                    f"but live public access is '{live_public}'."
+                ),
+                bucket=intent.bucket,
+                evidence={
+                    "declared_access": declared_access,
+                    "live_public_access": live_public,
+                    "source_file": intent.source_file,
+                },
+                remediation="Set container_access_type=private and disable blob public access.",
+            )
+        )
+    return findings
+
+
+def _check_gcs_drift(intent, live_bucket: BucketSnapshot) -> list[Finding]:
+    if live_bucket.cloud != "gcs":
+        return []
+    findings: list[Finding] = []
+    live_bpa = live_bucket.block_public_access or {}
+    declared_pap = intent.public_access_prevention
+    live_pap = str(live_bpa.get("public_access_prevention", "unknown")).lower()
+    if declared_pap and declared_pap.lower() == "enforced" and live_pap != "enforced":
+        findings.append(
+            Finding(
+                rule_id="iac/pap-drift",
+                title="Terraform public access prevention drift",
+                severity=Severity.HIGH,
+                message=(
+                    f"Terraform enforces public access prevention on '{intent.bucket}' "
+                    f"but live setting is '{live_pap}'."
+                ),
+                bucket=intent.bucket,
+                evidence={
+                    "declared_pap": declared_pap,
+                    "live_pap": live_pap,
+                    "source_file": intent.source_file,
+                },
+                remediation="Apply Terraform or enforce publicAccessPrevention on the bucket.",
+            )
+        )
+    if intent.uniform_bucket_level_access is True:
+        live_ubla = live_bpa.get("uniform_bucket_level_access")
+        if live_ubla is False:
+            findings.append(
+                Finding(
+                    rule_id="iac/ubla-drift",
+                    title="Terraform uniform bucket-level access drift",
+                    severity=Severity.MEDIUM,
+                    message=(
+                        f"Terraform enables uniform bucket-level access on '{intent.bucket}' "
+                        "but live setting is disabled."
+                    ),
+                    bucket=intent.bucket,
+                    evidence={
+                        "declared_ubla": True,
+                        "live_ubla": False,
+                        "source_file": intent.source_file,
+                    },
+                    remediation="Enable uniform bucket-level access in GCS or update Terraform.",
+                )
+            )
+    if intent.iam_public and not live_bpa.get("iam_public"):
+        findings.append(
+            Finding(
+                rule_id="iac/iam-public-drift",
+                title="Terraform declares public IAM but live is private",
+                severity=Severity.MEDIUM,
+                message=(
+                    f"Terraform grants public IAM on '{intent.bucket}' "
+                    "but live scan shows no public IAM principal."
+                ),
+                bucket=intent.bucket,
+                evidence={"source_file": intent.source_file},
+                remediation="Reconcile Terraform IAM bindings with live bucket IAM.",
+            )
+        )
+    elif not intent.iam_public and live_bpa.get("iam_public"):
+        findings.append(
+            Finding(
+                rule_id="iac/iam-public-drift",
+                title="Live bucket has public IAM not declared in Terraform",
+                severity=Severity.CRITICAL,
+                message=(
+                    f"Live bucket '{intent.bucket}' allows public IAM principals "
+                    "but Terraform does not declare them."
+                ),
+                bucket=intent.bucket,
+                evidence={"source_file": intent.source_file, "live_iam_public": True},
+                remediation="Remove public IAM bindings or declare them explicitly in Terraform.",
+            )
+        )
+    return findings

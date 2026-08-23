@@ -50,3 +50,16 @@ bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml \
 ```
 
 Upload `report.sarif` via GitHub Code Scanning or your SARIF-compatible platform. Filter by tag, e.g. `CIS-1.5` or `NIST-AC-3`.
+
+## Compliance JSON export
+
+Aggregate findings by control tag for GRC dashboards:
+
+```bash
+bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml \
+  --compliance-report compliance.json --fail-on high
+```
+
+See [`build_compliance_report`](../src/bucket_scanner/compliance.py) output shape: `controls`, `untagged_findings`, `summary.by_control`.
+
+Cross-stack Tracefuse import: [TRACEFUSE.md](TRACEFUSE.md).

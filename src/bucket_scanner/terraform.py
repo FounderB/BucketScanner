@@ -7,18 +7,25 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 BUCKET_RESOURCE = re.compile(
-    r'resource\s+"(yandex_storage_bucket|aws_s3_bucket)"\s+"([^"]+)"\s*\{'
+    r'resource\s+"(yandex_storage_bucket|aws_s3_bucket|google_storage_bucket)"\s+"([^"]+)"\s*\{'
 )
 ACL_RESOURCE = re.compile(r'resource\s+"aws_s3_bucket_acl"\s+"([^"]+)"\s*\{')
 BPA_RESOURCE = re.compile(r'resource\s+"aws_s3_bucket_public_access_block"\s+"([^"]+)"\s*\{')
-STRING_FIELD = re.compile(r'^\s*(bucket|acl|bucket_prefix)\s*=\s*"([^"]*)"')
+AZURE_CONTAINER = re.compile(r'resource\s+"azurerm_storage_container"\s+"([^"]+)"\s*\{')
+GCS_IAM_MEMBER = re.compile(r'resource\s+"google_storage_bucket_iam_member"\s+"([^"]+)"\s*\{')
+STRING_FIELD = re.compile(r'^\s*(bucket|acl|bucket_prefix|name)\s*=\s*"([^"]*)"')
 REF_FIELD = re.compile(r"^\s*(bucket)\s*=\s*([\w.]+)")
+MEMBER_FIELD = re.compile(r'^\s*member\s*=\s*"([^"]*)"')
+CONTAINER_ACCESS = re.compile(r'^\s*container_access_type\s*=\s*"([^"]*)"')
+PAP_FIELD = re.compile(r'^\s*public_access_prevention\s*=\s*"([^"]*)"')
+UBLA_ENABLED = re.compile(r"^\s*enabled\s*=\s*(true|false)", re.IGNORECASE)
 BOOL_FIELD = re.compile(
     r"^\s*(block_public_acls|ignore_public_acls|block_public_policy|restrict_public_buckets)"
     r"\s*=\s*(true|false)",
     re.IGNORECASE,
 )
 
+PUBLIC_IAM_MEMBERS = frozenset({"allUsers", "allAuthenticatedUsers"})
 SKIP_EXTENSIONS = {".tfstate", ".terraform"}
 BPA_KEYS = (
     "BlockPublicAcls",
@@ -34,6 +41,10 @@ class TerraformBucketIntent:
     bucket: str | None = None
     acl: str | None = None
     block_public_access: dict[str, bool] = field(default_factory=dict)
+    container_access_type: str | None = None
+    public_access_prevention: str | None = None
+    uniform_bucket_level_access: bool | None = None
+    iam_public: bool = False
     source_file: str | None = None
     resource_type: str | None = None
 
@@ -42,6 +53,8 @@ def parse_terraform_dir(path: Path) -> list[TerraformBucketIntent]:
     bucket_blocks: list[tuple[str, str, list[str], str]] = []
     acl_blocks: list[tuple[str, list[str], str]] = []
     bpa_blocks: list[tuple[str, list[str], str]] = []
+    azure_blocks: list[tuple[str, list[str], str]] = []
+    gcs_iam_blocks: list[tuple[str, list[str], str]] = []
 
     for file_path in sorted(path.rglob("*.tf")):
         if any(part in SKIP_EXTENSIONS for part in file_path.parts):
@@ -68,12 +81,40 @@ def parse_terraform_dir(path: Path) -> list[TerraformBucketIntent]:
                 block_lines, index = _read_block(lines, index)
                 bpa_blocks.append((resource_name, block_lines, str(file_path)))
                 continue
+            azure_match = AZURE_CONTAINER.match(lines[index])
+            if azure_match:
+                resource_name = azure_match.group(1)
+                block_lines, index = _read_block(lines, index)
+                azure_blocks.append((resource_name, block_lines, str(file_path)))
+                continue
+            gcs_iam_match = GCS_IAM_MEMBER.match(lines[index])
+            if gcs_iam_match:
+                resource_name = gcs_iam_match.group(1)
+                block_lines, index = _read_block(lines, index)
+                gcs_iam_blocks.append((resource_name, block_lines, str(file_path)))
+                continue
             index += 1
 
     registry = _build_bucket_registry(bucket_blocks)
+    gcs_registry = _build_gcs_registry(bucket_blocks)
     intents: list[TerraformBucketIntent] = []
 
     for resource_type, resource_name, block_lines, source_file in bucket_blocks:
+        if resource_type == "google_storage_bucket":
+            bucket, pap, ubla = _parse_gcs_bucket_block(block_lines)
+            if bucket:
+                intents.append(
+                    TerraformBucketIntent(
+                        resource_name=resource_name,
+                        bucket=bucket,
+                        acl="private",
+                        public_access_prevention=pap,
+                        uniform_bucket_level_access=ubla,
+                        source_file=source_file,
+                        resource_type=resource_type,
+                    )
+                )
+            continue
         bucket, acl = _parse_bucket_block(block_lines)
         if bucket:
             intents.append(
@@ -111,6 +152,34 @@ def parse_terraform_dir(path: Path) -> list[TerraformBucketIntent]:
                     block_public_access=bpa,
                     source_file=source_file,
                     resource_type="aws_s3_bucket_public_access_block",
+                )
+            )
+
+    for resource_name, block_lines, source_file in azure_blocks:
+        container_name, access = _parse_azure_container_block(block_lines)
+        if container_name:
+            intents.append(
+                TerraformBucketIntent(
+                    resource_name=resource_name,
+                    bucket=container_name,
+                    acl="private" if access in {None, "private", "off"} else "public-read",
+                    container_access_type=(access or "private").lower(),
+                    source_file=source_file,
+                    resource_type="azurerm_storage_container",
+                )
+            )
+
+    for resource_name, block_lines, source_file in gcs_iam_blocks:
+        bucket_ref, member = _parse_gcs_iam_block(block_lines)
+        bucket = _resolve_gcs_bucket_ref(bucket_ref, gcs_registry) if bucket_ref else None
+        if bucket and member in PUBLIC_IAM_MEMBERS:
+            intents.append(
+                TerraformBucketIntent(
+                    resource_name=resource_name,
+                    bucket=bucket,
+                    iam_public=True,
+                    source_file=source_file,
+                    resource_type="google_storage_bucket_iam_member",
                 )
             )
 
@@ -213,10 +282,104 @@ def _dedupe_intents(intents: list[TerraformBucketIntent]) -> list[TerraformBucke
             bucket=intent.bucket,
             acl=intent.acl or current.acl,
             block_public_access={**current.block_public_access, **intent.block_public_access},
+            container_access_type=intent.container_access_type or current.container_access_type,
+            public_access_prevention=(
+                intent.public_access_prevention or current.public_access_prevention
+            ),
+            uniform_bucket_level_access=(
+                intent.uniform_bucket_level_access
+                if intent.uniform_bucket_level_access is not None
+                else current.uniform_bucket_level_access
+            ),
+            iam_public=intent.iam_public or current.iam_public,
             source_file=intent.source_file or current.source_file,
             resource_type=intent.resource_type or current.resource_type,
         )
     return list(merged.values())
+
+
+def _build_gcs_registry(
+    bucket_blocks: list[tuple[str, str, list[str], str]],
+) -> dict[str, str]:
+    registry: dict[str, str] = {}
+    for resource_type, resource_name, block_lines, _ in bucket_blocks:
+        if resource_type != "google_storage_bucket":
+            continue
+        bucket, _, _ = _parse_gcs_bucket_block(block_lines)
+        if bucket:
+            registry[f"{resource_type}.{resource_name}"] = bucket
+    return registry
+
+
+def _parse_gcs_bucket_block(
+    block_lines: list[str],
+) -> tuple[str | None, str | None, bool | None]:
+    bucket: str | None = None
+    pap: str | None = None
+    ubla: bool | None = None
+    in_ubla = False
+    for line in block_lines:
+        if "uniform_bucket_level_access" in line and "{" in line:
+            in_ubla = True
+            continue
+        if in_ubla:
+            ubla_match = UBLA_ENABLED.match(line)
+            if ubla_match:
+                ubla = ubla_match.group(1).lower() == "true"
+            if "}" in line:
+                in_ubla = False
+            continue
+        string_match = STRING_FIELD.match(line)
+        if string_match:
+            key, value = string_match.groups()
+            if key in {"bucket", "name"}:
+                bucket = value
+            continue
+        pap_match = PAP_FIELD.match(line)
+        if pap_match:
+            pap = pap_match.group(1)
+    return bucket, pap, ubla
+
+
+def _parse_azure_container_block(block_lines: list[str]) -> tuple[str | None, str | None]:
+    container_name: str | None = None
+    access: str | None = None
+    for line in block_lines:
+        string_match = STRING_FIELD.match(line)
+        if string_match:
+            key, value = string_match.groups()
+            if key == "name":
+                container_name = value
+            continue
+        access_match = CONTAINER_ACCESS.match(line)
+        if access_match:
+            access = access_match.group(1)
+    return container_name, access
+
+
+def _parse_gcs_iam_block(block_lines: list[str]) -> tuple[str | None, str | None]:
+    bucket_ref: str | None = None
+    member: str | None = None
+    for line in block_lines:
+        ref_match = REF_FIELD.match(line)
+        if ref_match:
+            bucket_ref = ref_match.group(2)
+            continue
+        member_match = MEMBER_FIELD.match(line)
+        if member_match:
+            member = member_match.group(1)
+    return bucket_ref, member
+
+
+def _resolve_gcs_bucket_ref(value: str, registry: dict[str, str]) -> str | None:
+    if value in registry.values():
+        return value
+    parts = value.split(".")
+    if len(parts) >= 2:
+        resource_type = parts[0]
+        resource_name = parts[1]
+        return registry.get(f"{resource_type}.{resource_name}")
+    return None
 
 
 def _read_block(lines: list[str], start: int) -> tuple[list[str], int]:

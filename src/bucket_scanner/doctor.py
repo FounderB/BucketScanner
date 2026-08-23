@@ -2,156 +2,272 @@
 
 from __future__ import annotations
 
+import json
+from typing import Any
+
 from rich.console import Console
 
 from bucket_scanner.auth import CredentialError, resolve_credentials
 from bucket_scanner.aws.s3 import build_aws_s3_client, build_aws_sts_client, resolve_account_id
 from bucket_scanner.cloud import CloudProvider
-from bucket_scanner.config import load_config
-from bucket_scanner.yc.management import YcManagementClient
+from bucket_scanner.config import ScanConfig, load_config
 
 
-def run_doctor(console: Console | None = None) -> int:
-    out = console or Console()
+def _check(name: str, status: str, message: str) -> dict[str, str]:
+    return {"name": name, "status": status, "message": message}
+
+
+def build_doctor_report(
+    *,
+    cloud: CloudProvider | None = None,
+    config: ScanConfig | None = None,
+) -> dict[str, Any]:
+    scan_config = config or load_config().scan
+    active_cloud = cloud or scan_config.cloud
+    checks: list[dict[str, str]] = []
     issues = 0
+    exit_code = 0
 
-    config = load_config()
-    cloud = config.scan.cloud
-    out.print(f"[green]✓[/green] Cloud backend: {cloud.value}")
+    checks.append(_check("cloud", "ok", active_cloud.value))
 
-    if cloud == CloudProvider.AWS:
-        if config.scan.aws_region:
-            out.print(f"[green]✓[/green] AWS region: {config.scan.aws_region}")
-        if config.scan.aws_profile:
-            out.print(f"[green]✓[/green] AWS profile: {config.scan.aws_profile}")
-    elif cloud == CloudProvider.AZURE:
-        if config.scan.folder_id:
-            out.print(f"[green]✓[/green] Config subscription: {config.scan.folder_id}")
+    if active_cloud == CloudProvider.AWS:
+        if scan_config.aws_region:
+            checks.append(_check("aws_region", "ok", scan_config.aws_region))
+        if scan_config.aws_profile:
+            checks.append(_check("aws_profile", "ok", scan_config.aws_profile))
+    elif active_cloud == CloudProvider.AZURE:
+        if scan_config.folder_id:
+            checks.append(_check("subscription", "ok", scan_config.folder_id))
         else:
-            out.print(
-                "[yellow]![/yellow] No subscription in .bucket-scanner.toml "
-                "(use --folder-id or AZURE_SUBSCRIPTION_ID)"
+            checks.append(
+                _check(
+                    "subscription",
+                    "warn",
+                    "No subscription in .bucket-scanner.toml "
+                    "(use --folder-id or AZURE_SUBSCRIPTION_ID)",
+                )
             )
             issues += 1
-    elif cloud == CloudProvider.GCS:
-        if config.scan.folder_id:
-            out.print(f"[green]✓[/green] Config project: {config.scan.folder_id}")
+    elif active_cloud == CloudProvider.GCS:
+        if scan_config.folder_id:
+            checks.append(_check("project", "ok", scan_config.folder_id))
         else:
-            out.print(
-                "[yellow]![/yellow] No project in .bucket-scanner.toml "
-                "(use --folder-id or GCP_PROJECT)"
+            checks.append(
+                _check(
+                    "project",
+                    "warn",
+                    "No project in .bucket-scanner.toml (use --folder-id or GCP_PROJECT)",
+                )
             )
             issues += 1
-    elif config.scan.folder_id or config.scan.folder_ids:
-        if config.scan.folder_ids:
-            out.print(
-                f"[green]✓[/green] Config folder_ids: {', '.join(config.scan.folder_ids)}"
+    elif scan_config.folder_id or scan_config.folder_ids:
+        if scan_config.folder_ids:
+            checks.append(
+                _check("folder_ids", "ok", ", ".join(scan_config.folder_ids))
             )
         else:
-            out.print(f"[green]✓[/green] Config folder_id: {config.scan.folder_id}")
+            checks.append(_check("folder_id", "ok", scan_config.folder_id or ""))
     else:
-        out.print(
-            "[yellow]![/yellow] No folder_id in .bucket-scanner.toml "
-            "(use --folder-id or init)"
+        checks.append(
+            _check(
+                "folder_id",
+                "warn",
+                "No folder_id in .bucket-scanner.toml (use --folder-id or init)",
+            )
         )
         issues += 1
 
     try:
         credentials = resolve_credentials(
-            cloud=cloud,
-            region=config.scan.aws_region,
-            profile=config.scan.aws_profile,
+            cloud=active_cloud,
+            region=scan_config.aws_region,
+            profile=scan_config.aws_profile,
         )
-        out.print(f"[green]✓[/green] Credentials resolved via {credentials.source}")
+        checks.append(_check("credentials", "ok", f"resolved via {credentials.source}"))
     except CredentialError as exc:
-        out.print(f"[red]✗[/red] {exc}")
-        return 2
+        checks.append(_check("credentials", "error", str(exc)))
+        return {
+            "tool": "bucket-scanner",
+            "command": "doctor",
+            "cloud": active_cloud.value,
+            "exit_code": 2,
+            "checks": checks,
+        }
 
-    if cloud == CloudProvider.AWS:
+    if active_cloud == CloudProvider.AWS:
         try:
             sts = build_aws_sts_client(credentials)
             sts.get_caller_identity()
             account_id = resolve_account_id(credentials)
-            out.print(f"[green]✓[/green] AWS STS reachable (account {account_id})")
+            checks.append(_check("aws_sts", "ok", f"reachable (account {account_id})"))
         except Exception as exc:
-            out.print(f"[red]✗[/red] AWS STS unreachable: {exc}")
+            checks.append(_check("aws_sts", "error", f"unreachable: {exc}"))
             issues += 1
         try:
             s3 = build_aws_s3_client(credentials)
             s3.list_buckets(MaxBuckets=1)
-            out.print("[green]✓[/green] AWS S3 API reachable")
+            checks.append(_check("aws_s3", "ok", "API reachable"))
         except Exception as exc:
-            out.print(f"[red]✗[/red] AWS S3 unreachable: {exc}")
+            checks.append(_check("aws_s3", "error", f"unreachable: {exc}"))
             issues += 1
-        return 1 if issues else 0
+        exit_code = 1 if issues else 0
+        return {
+            "tool": "bucket-scanner",
+            "command": "doctor",
+            "cloud": active_cloud.value,
+            "exit_code": exit_code,
+            "checks": checks,
+        }
 
-    if cloud == CloudProvider.AZURE:
+    if active_cloud == CloudProvider.AZURE:
         try:
             from bucket_scanner.azure.storage import AzureDependencyError, _import_azure
 
             _import_azure()
-            out.print("[green]✓[/green] Azure SDK dependencies available")
+            checks.append(_check("azure_sdk", "ok", "dependencies available"))
         except AzureDependencyError as exc:
-            out.print(f"[red]✗[/red] {exc}")
-            return 2
+            checks.append(_check("azure_sdk", "error", str(exc)))
+            return {
+                "tool": "bucket-scanner",
+                "command": "doctor",
+                "cloud": active_cloud.value,
+                "exit_code": 2,
+                "checks": checks,
+            }
         if credentials.subscription_id:
-            out.print(
-                f"[green]✓[/green] Azure subscription: {credentials.subscription_id}"
+            checks.append(
+                _check("azure_subscription", "ok", credentials.subscription_id)
             )
-        elif config.scan.folder_id:
-            out.print(
-                f"[green]✓[/green] Azure subscription (config): {config.scan.folder_id}"
+        elif scan_config.folder_id:
+            checks.append(
+                _check("azure_subscription", "ok", f"config: {scan_config.folder_id}")
             )
         else:
-            out.print(
-                "[yellow]![/yellow] AZURE_SUBSCRIPTION_ID not set "
-                "(pass --folder-id for live scan)"
+            checks.append(
+                _check(
+                    "azure_subscription",
+                    "warn",
+                    "AZURE_SUBSCRIPTION_ID not set (pass --folder-id for live scan)",
+                )
             )
             issues += 1
-        out.print(
-            "[green]✓[/green] Azure credential chain configured "
-            "(DefaultAzureCredential / AZURE_* env / managed identity)"
+        checks.append(
+            _check(
+                "azure_credentials",
+                "ok",
+                "DefaultAzureCredential / AZURE_* env / managed identity",
+            )
         )
-        return 1 if issues else 0
+        exit_code = 1 if issues else 0
+        return {
+            "tool": "bucket-scanner",
+            "command": "doctor",
+            "cloud": active_cloud.value,
+            "exit_code": exit_code,
+            "checks": checks,
+        }
 
-    if cloud == CloudProvider.GCS:
+    if active_cloud == CloudProvider.GCS:
         try:
             from bucket_scanner.gcs.storage import GcsDependencyError, _import_gcs
 
             _import_gcs()
-            out.print("[green]✓[/green] GCS SDK dependencies available")
+            checks.append(_check("gcs_sdk", "ok", "dependencies available"))
         except GcsDependencyError as exc:
-            out.print(f"[red]✗[/red] {exc}")
-            return 2
-        project = credentials.folder_id or config.scan.folder_id
+            checks.append(_check("gcs_sdk", "error", str(exc)))
+            return {
+                "tool": "bucket-scanner",
+                "command": "doctor",
+                "cloud": active_cloud.value,
+                "exit_code": 2,
+                "checks": checks,
+            }
+        project = credentials.folder_id or scan_config.folder_id
         if project:
-            out.print(f"[green]✓[/green] GCP project: {project}")
+            checks.append(_check("gcp_project", "ok", project))
         else:
-            out.print(
-                "[yellow]![/yellow] GCP_PROJECT not set (pass --folder-id for live scan)"
+            checks.append(
+                _check(
+                    "gcp_project",
+                    "warn",
+                    "GCP_PROJECT not set (pass --folder-id for live scan)",
+                )
             )
             issues += 1
-        out.print(
-            "[green]✓[/green] GCP credentials configured "
-            "(Application Default Credentials / GOOGLE_APPLICATION_CREDENTIALS)"
+        checks.append(
+            _check(
+                "gcp_credentials",
+                "ok",
+                "Application Default Credentials / GOOGLE_APPLICATION_CREDENTIALS",
+            )
         )
-        return 1 if issues else 0
+        exit_code = 1 if issues else 0
+        return {
+            "tool": "bucket-scanner",
+            "command": "doctor",
+            "cloud": active_cloud.value,
+            "exit_code": exit_code,
+            "checks": checks,
+        }
 
     if credentials.iam_token:
+        from bucket_scanner.yc.management import YcManagementClient
+
         client = YcManagementClient(credentials.iam_token)
         if client.ping():
-            out.print("[green]✓[/green] IAM API reachable")
+            checks.append(_check("iam_api", "ok", "reachable"))
         else:
-            out.print("[red]✗[/red] IAM API unreachable")
+            checks.append(_check("iam_api", "error", "unreachable"))
             issues += 1
     else:
-        out.print(
-            "[yellow]![/yellow] No IAM token — folder inventory and SA checks limited"
+        checks.append(
+            _check(
+                "iam_token",
+                "warn",
+                "No IAM token — folder inventory and SA checks limited",
+            )
         )
 
     if credentials.access_key_id and credentials.secret_access_key:
-        out.print("[green]✓[/green] Static S3 keys present")
+        checks.append(_check("s3_keys", "ok", "static S3 keys present"))
     else:
-        out.print("[yellow]![/yellow] No static S3 keys — ACL/encryption checks will be limited")
+        checks.append(
+            _check(
+                "s3_keys",
+                "warn",
+                "No static S3 keys — ACL/encryption checks will be limited",
+            )
+        )
 
-    return 1 if issues else 0
+    exit_code = 1 if issues else 0
+    return {
+        "tool": "bucket-scanner",
+        "command": "doctor",
+        "cloud": active_cloud.value,
+        "exit_code": exit_code,
+        "checks": checks,
+    }
+
+
+def run_doctor(
+    console: Console | None = None,
+    *,
+    cloud: CloudProvider | None = None,
+    config: ScanConfig | None = None,
+) -> int:
+    out = console or Console()
+    report = build_doctor_report(cloud=cloud, config=config)
+    for item in report["checks"]:
+        status = item["status"]
+        prefix = {"ok": "[green]✓[/green]", "warn": "[yellow]![/yellow]", "error": "[red]✗[/red]"}
+        label = item["name"].replace("_", " ")
+        out.print(f"{prefix.get(status, status)} {label}: {item['message']}")
+    return int(report["exit_code"])
+
+
+def render_doctor_json(
+    *,
+    cloud: CloudProvider | None = None,
+    config: ScanConfig | None = None,
+) -> str:
+    return json.dumps(build_doctor_report(cloud=cloud, config=config), indent=2)

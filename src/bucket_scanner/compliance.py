@@ -30,6 +30,19 @@ COMPLIANCE_TAGS: dict[str, list[str]] = {
     "secrets/azure-env-var": ["NIST-IA-5", "SOC2-CC6.1"],
     "chain/silent-exfil": ["NIST-AC-3", "NIST-AU-2", "NIST-CP-9"],
     "chain/leaked-credentials-exposure": ["NIST-IA-5", "NIST-AC-3"],
+    "iac/shadow-bucket": ["CIS-1.5", "NIST-CM-8", "SOC2-CC8.1"],
+    "iac/ghost-bucket": ["NIST-CM-8", "SOC2-CC8.1"],
+    "iac/acl-drift": ["CIS-1.5", "NIST-CM-6", "SOC2-CC8.1"],
+    "iac/bpa-drift": ["CIS-1.5", "NIST-CM-6", "SOC2-CC8.1"],
+    "iac/container-access-drift": ["CIS-1.5", "NIST-CM-6", "SOC2-CC8.1"],
+    "iac/pap-drift": ["CIS-1.5", "NIST-CM-6", "SOC2-CC8.1"],
+    "iac/ubla-drift": ["CIS-3.11", "NIST-CM-6", "SOC2-CC8.1"],
+    "iac/iam-public-drift": ["CIS-1.5", "NIST-CM-6", "SOC2-CC8.1"],
+    "iac/no-buckets-declared": ["NIST-CM-8"],
+    "tracefuse/secrets/yc-token": ["NIST-IA-5", "SOC2-CC6.1"],
+    "tracefuse/secrets/aws-access-key": ["NIST-IA-5", "SOC2-CC6.1"],
+    "tracefuse/secrets/azure-client-secret": ["NIST-IA-5", "SOC2-CC6.1"],
+    "tracefuse/secrets/gcp-service-account-key": ["NIST-IA-5", "SOC2-CC6.1"],
 }
 
 
@@ -46,10 +59,91 @@ def _framework_buckets(tags: list[str]) -> dict[str, list[str]]:
 
 
 def sarif_rule_properties(rule_id: str) -> dict[str, Any]:
-    tags = COMPLIANCE_TAGS.get(rule_id, [])
+    tags = compliance_tags_for_rule(rule_id)
     if not tags:
         return {"tags": ["security"]}
     return {
         "tags": ["security", *tags],
         "compliance": _framework_buckets(tags),
     }
+
+
+def compliance_tags_for_rule(rule_id: str) -> list[str]:
+    direct = COMPLIANCE_TAGS.get(rule_id)
+    if direct:
+        return direct
+    if rule_id.startswith("tracefuse/"):
+        base = rule_id.removeprefix("tracefuse/")
+        for key, tags in COMPLIANCE_TAGS.items():
+            if key.startswith("tracefuse/") and base.startswith(key.removeprefix("tracefuse/")):
+                return tags
+        return COMPLIANCE_TAGS.get("tracefuse/secrets/yc-token", [])
+    return []
+
+
+def build_compliance_report(report) -> dict[str, Any]:
+    """Aggregate scan findings by compliance control tag."""
+    controls: dict[str, list[dict[str, Any]]] = {}
+    untagged: list[dict[str, Any]] = []
+
+    for finding in report.findings:
+        payload = {
+            "rule_id": finding.rule_id,
+            "severity": finding.severity.value,
+            "title": finding.title,
+            "bucket": finding.bucket,
+            "message": finding.message,
+        }
+        tags = compliance_tags_for_rule(finding.rule_id)
+        if not tags:
+            untagged.append(payload)
+            continue
+        for tag in tags:
+            controls.setdefault(tag, []).append(payload)
+
+    for chain in report.chains:
+        for rule_id in chain.rule_ids:
+            payload = {
+                "rule_id": rule_id,
+                "severity": chain.severity.value,
+                "title": chain.title,
+                "chain_id": chain.chain_id,
+                "buckets": chain.buckets,
+                "message": chain.message,
+            }
+            tags = compliance_tags_for_rule(rule_id)
+            if not tags:
+                untagged.append(payload)
+                continue
+            for tag in tags:
+                controls.setdefault(tag, []).append(payload)
+
+    summary_controls = {
+        tag: len(items) for tag, items in sorted(controls.items())
+    }
+    return {
+        "tool": report.tool,
+        "version": report.version,
+        "cloud": report.cloud,
+        "scope_id": report.folder_id,
+        "scanned_at": report.scanned_at.isoformat(),
+        "frameworks": ["cis", "nist_800_53", "soc2"],
+        "controls": {
+            tag: {"count": len(items), "findings": items}
+            for tag, items in sorted(controls.items())
+        },
+        "untagged_findings": untagged,
+        "summary": {
+            "total_findings": len(report.findings),
+            "total_chains": len(report.chains),
+            "tagged_controls": len(controls),
+            "untagged": len(untagged),
+            "by_control": summary_controls,
+        },
+    }
+
+
+def render_compliance_json(report) -> str:
+    import json
+
+    return json.dumps(build_compliance_report(report), indent=2)

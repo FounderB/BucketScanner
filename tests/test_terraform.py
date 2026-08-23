@@ -10,8 +10,12 @@ from bucket_scanner.terraform import parse_terraform_file
 
 TF = Path("examples/demo-vulnerable/terraform/main.tf")
 TF_AWS = Path("examples/demo-vulnerable/terraform-aws/main.tf")
+TF_AZURE = Path("examples/demo-vulnerable/terraform-azure/main.tf")
+TF_GCS = Path("examples/demo-vulnerable/terraform-gcs/main.tf")
 FIXTURE = Path("examples/demo-vulnerable/fixture.toml")
 AWS_FIXTURE = Path("examples/demo-vulnerable/fixture-aws.toml")
+AZURE_FIXTURE = Path("examples/demo-vulnerable/fixture-azure.toml")
+GCS_FIXTURE = Path("examples/demo-vulnerable/fixture-gcs.toml")
 
 
 def test_parse_terraform_file():
@@ -65,3 +69,35 @@ def test_parse_aws_bpa_intent():
     bpa = by_bucket["prod-backups-open"].block_public_access
     assert bpa["BlockPublicAcls"] is True
     assert bpa["RestrictPublicBuckets"] is True
+
+
+def test_parse_azure_terraform_containers():
+    intents = parse_terraform_file(TF_AZURE)
+    by_bucket = {item.bucket: item for item in intents}
+    assert by_bucket["prod-backups-open"].container_access_type == "private"
+    assert by_bucket["internal-logs-secure"].acl == "private"
+
+
+def test_diff_azure_container_drift():
+    _, buckets, _ = load_fixture(AZURE_FIXTURE)
+    findings = diff_terraform(TF_AZURE.parent, buckets)
+    rules = {item.rule_id for item in findings}
+    assert "iac/container-access-drift" in rules
+    assert "iac/ghost-bucket" in rules
+
+
+def test_parse_gcs_terraform_buckets():
+    intents = parse_terraform_file(TF_GCS)
+    by_bucket = {item.bucket: item for item in intents}
+    assert by_bucket["prod-backups-open"].public_access_prevention == "enforced"
+    assert by_bucket["prod-backups-open"].uniform_bucket_level_access is True
+
+
+def test_diff_gcs_pap_and_ubla_drift():
+    _, buckets, _ = load_fixture(GCS_FIXTURE)
+    findings = diff_terraform(TF_GCS.parent, buckets)
+    rules = {item.rule_id for item in findings}
+    assert "iac/pap-drift" in rules
+    assert "iac/ubla-drift" in rules
+    assert "iac/iam-public-drift" in rules
+    assert "iac/acl-drift" in rules

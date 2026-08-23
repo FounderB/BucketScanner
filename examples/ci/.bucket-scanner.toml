@@ -27,10 +27,26 @@ fail_on = "high"
 name = "azure-fixture"
 cloud = "azure"
 fixture = "examples/demo-vulnerable/fixture-azure.toml"
+terraform_path = "examples/demo-vulnerable/terraform-azure"
 fail_on = "high"
 
 [[profiles]]
 name = "gcs-fixture"
 cloud = "gcs"
 fixture = "examples/demo-vulnerable/fixture-gcs.toml"
+terraform_path = "examples/demo-vulnerable/terraform-gcs"
 fail_on = "high"
+
+[[profiles]]
+name = "strict-prod"
+cloud = "yandex"
+fixture = "examples/demo-vulnerable/fixture.toml"
+terraform_path = "examples/demo-vulnerable/terraform"
+probe = true
+fail_on = "critical"
+
+[[profiles]]
+name = "audit-only"
+cloud = "yandex"
+fixture = "examples/demo-vulnerable/fixture.toml"
+fail_on = "critical"
