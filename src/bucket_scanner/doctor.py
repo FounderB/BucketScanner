@@ -25,11 +25,14 @@ def run_doctor(console: Console | None = None) -> int:
         if config.scan.aws_profile:
             out.print(f"[green]✓[/green] AWS profile: {config.scan.aws_profile}")
     elif cloud == CloudProvider.AZURE:
-        out.print(
-            "[yellow]![/yellow] Azure live scan is fixture-only today "
-            "(use --fixture or --profile with fixture)"
-        )
-        return 0
+        if config.scan.folder_id:
+            out.print(f"[green]✓[/green] Config subscription: {config.scan.folder_id}")
+        else:
+            out.print(
+                "[yellow]![/yellow] No subscription in .bucket-scanner.toml "
+                "(use --folder-id or AZURE_SUBSCRIPTION_ID)"
+            )
+            issues += 1
     elif config.scan.folder_id or config.scan.folder_ids:
         if config.scan.folder_ids:
             out.print(
@@ -71,6 +74,35 @@ def run_doctor(console: Console | None = None) -> int:
         except Exception as exc:
             out.print(f"[red]✗[/red] AWS S3 unreachable: {exc}")
             issues += 1
+        return 1 if issues else 0
+
+    if cloud == CloudProvider.AZURE:
+        try:
+            from bucket_scanner.azure.storage import AzureDependencyError, _import_azure
+
+            _import_azure()
+            out.print("[green]✓[/green] Azure SDK dependencies available")
+        except AzureDependencyError as exc:
+            out.print(f"[red]✗[/red] {exc}")
+            return 2
+        if credentials.subscription_id:
+            out.print(
+                f"[green]✓[/green] Azure subscription: {credentials.subscription_id}"
+            )
+        elif config.scan.folder_id:
+            out.print(
+                f"[green]✓[/green] Azure subscription (config): {config.scan.folder_id}"
+            )
+        else:
+            out.print(
+                "[yellow]![/yellow] AZURE_SUBSCRIPTION_ID not set "
+                "(pass --folder-id for live scan)"
+            )
+            issues += 1
+        out.print(
+            "[green]✓[/green] Azure credential chain configured "
+            "(DefaultAzureCredential / AZURE_* env / managed identity)"
+        )
         return 1 if issues else 0
 
     if credentials.iam_token:

@@ -29,6 +29,8 @@ class Credentials:
     region: str | None = None
     profile: str | None = None
     account_id: str | None = None
+    subscription_id: str | None = None
+    tenant_id: str | None = None
     source: str = "env"
 
 
@@ -78,9 +80,7 @@ def resolve_credentials(
     if cloud == CloudProvider.AWS:
         return resolve_aws_credentials(region=region, profile=profile)
     if cloud == CloudProvider.AZURE:
-        raise CredentialError(
-            "Azure live credentials are not supported yet. Use --fixture for offline scans."
-        )
+        return resolve_azure_credentials()
     return _resolve_yandex_credentials()
 
 
@@ -110,6 +110,18 @@ def _resolve_yandex_credentials() -> Credentials:
         folder_id=folder_id,
         cloud_id=cloud_id,
         source=source,
+    )
+
+
+def resolve_azure_credentials() -> Credentials:
+    subscription_id = _env("AZURE_SUBSCRIPTION_ID", "ARM_SUBSCRIPTION_ID")
+    tenant_id = _env("AZURE_TENANT_ID", "ARM_TENANT_ID")
+    return Credentials(
+        cloud=CloudProvider.AZURE,
+        subscription_id=subscription_id,
+        tenant_id=tenant_id,
+        folder_id=subscription_id,
+        source="default-credential-chain",
     )
 
 

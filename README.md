@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/FounderB/BucketScanner/actions"><img src="https://img.shields.io/github/actions/workflow/status/FounderB/BucketScanner/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"/></a>
+  <a href="https://pypi.org/project/bucket-scanner/"><img src="https://img.shields.io/pypi/v/bucket-scanner?style=flat-square" alt="PyPI"/></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-2ee6a6?style=flat-square" alt="Python 3.11+"/>
   <img src="https://img.shields.io/badge/Yandex%20Cloud-Object%20Storage-5282FF?style=flat-square" alt="Yandex Cloud"/>
   <img src="https://img.shields.io/badge/AWS-S3-FF9900?style=flat-square" alt="AWS S3"/>
@@ -95,12 +96,17 @@ bucket-scanner scan --cloud aws --fixture examples/demo-vulnerable/fixture-aws.t
 bucket-scanner doctor --cloud aws
 ```
 
-## Azure Blob (fixture-only preview)
+## Azure Blob (live + fixture)
 
 ```bash
+pip install "bucket-scanner[azure]"
+export AZURE_SUBSCRIPTION_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+bucket-scanner scan --cloud azure --folder-id "$AZURE_SUBSCRIPTION_ID"
 bucket-scanner scan --cloud azure --fixture examples/demo-vulnerable/fixture-azure.toml
 bucket-scanner explain azure/container-public-access
 ```
+
+Live scan uses `DefaultAzureCredential` (env vars, managed identity, Azure CLI). See [docs/AZURE.md](docs/AZURE.md).
 
 Live Azure inventory is planned; see [docs/AZURE.md](docs/AZURE.md).
 
@@ -321,7 +327,7 @@ See [SECURITY.md](SECURITY.md) and [docs/AUDIT.md](docs/AUDIT.md).
 - [x] Baseline/delta + suppressions for production CI gates
 - [x] Security hardening + audit docs (v0.11)
 - [x] PyPI package (`pip install bucket-scanner`)
-- [ ] Azure Blob live scan
+- [x] Azure Blob live scan (`pip install bucket-scanner[azure]`)
 - [ ] GCS backend
 
 ---

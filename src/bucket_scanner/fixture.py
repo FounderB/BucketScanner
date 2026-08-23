@@ -31,6 +31,7 @@ def load_fixture(path: Path) -> tuple[str, list[BucketSnapshot], list[ServiceAcc
                 anonymous_readable=item.get("anonymous_readable"),
                 block_public_access=item.get("block_public_access"),
                 account_public_access_block=item.get("account_public_access_block", account_bpa),
+                tags=item.get("tags", {}),
             )
         )
 
