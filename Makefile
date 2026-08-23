@@ -25,7 +25,7 @@ lint:
 
 audit: lint
 	.venv/bin/bandit -r src -q
-	.venv/bin/pip install --upgrade pip
+	.venv/bin/pip install --upgrade pip "setuptools>=83"
 	.venv/bin/pip-audit
 
 aws-demo:

@@ -18,6 +18,7 @@ from bucket_scanner.aws.s3 import (
     resolve_bucket_region,
     snapshot_aws_bucket,
 )
+from bucket_scanner.azure.storage import AzureDependencyError, collect_azure_containers
 from bucket_scanner.chains import compose_chains
 from bucket_scanner.checks import (
     apply_overrides,
@@ -170,6 +171,26 @@ def _collect_aws_data(
     return buckets, sa_keys, account_id
 
 
+def _collect_azure_data(
+    credentials: Credentials,
+    *,
+    subscription_id: str,
+    probe: bool,
+    ignore: set[str],
+) -> tuple[list[BucketSnapshot], list[ServiceAccountKeySnapshot], str]:
+    try:
+        buckets = collect_azure_containers(
+            credentials,
+            subscription_id=subscription_id,
+            ignore=ignore,
+        )
+    except AzureDependencyError as exc:
+        raise ScanError(str(exc)) from exc
+    if probe:
+        buckets = [probe_bucket(bucket) for bucket in buckets]
+    return buckets, [], subscription_id
+
+
 def resolve_folder_ids(config: ScanConfig, folder_id: str | None = None) -> list[str]:
     if folder_id:
         return [folder_id]
@@ -262,9 +283,21 @@ def run_scan(
         method = "live"
         report_cloud = CloudProvider.AWS.value
     elif cloud == CloudProvider.AZURE:
-        raise ScanError(
-            "Azure Blob live scan is not implemented yet. Use --fixture for offline demos."
+        credentials = resolve_credentials(cloud=CloudProvider.AZURE)
+        subscription_id = folder_id or credentials.subscription_id
+        if not subscription_id:
+            raise ScanError(
+                "Provide --folder-id with Azure subscription GUID or set AZURE_SUBSCRIPTION_ID."
+            )
+        buckets, sa_keys, scope = _collect_azure_data(
+            credentials,
+            subscription_id=subscription_id,
+            probe=probe,
+            ignore=ignore,
         )
+        folder = scope
+        method = "live"
+        report_cloud = CloudProvider.AZURE.value
     else:
         folder_ids = resolve_folder_ids(config, folder_id)
         if not folder_ids:

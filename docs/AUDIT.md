@@ -34,7 +34,7 @@ Manual and automated checks run against Bucket Scanner **v0.11.0**.
 
 ## Residual risks / roadmap
 
-- Azure live scan not implemented — fixture-only reduces attack surface but limits coverage
+- Azure live scan requires optional `bucket-scanner[azure]` — larger dependency tree; pin versions in CI
 - Webhook POST sends finding summaries to user-configured URL — operators must trust target
 - `--probe` generates outbound HTTP to bucket endpoints (expected behaviour)
 - PyPI publish pending — install from source or GitHub Action today

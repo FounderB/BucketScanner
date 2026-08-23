@@ -2,6 +2,21 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [0.13.0] - 2026-08-23
+
+### Added
+
+- **Azure Blob live scan** — subscription inventory via `azure-identity` + `azure-mgmt-storage`
+- Optional extra: `pip install 'bucket-scanner[azure]'`
+- Container-level public access + storage account `allowBlobPublicAccess` checks from live API
+
+### Changed
+
+- PyPI badge in README; CI `pypi-smoke` job installs published wheel
+- GitHub Action profile demo pins `version: "0.12.0"` from PyPI
+- Publish workflow uses `twine upload --skip-existing`
+- Fixture loader preserves Azure `tags.storage_account` for probes
+
 ## [0.12.0] - 2026-08-23
 
 ### Added

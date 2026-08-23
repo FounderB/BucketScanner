@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bucket-scanner"
-version = "0.12.0"
-description = "Declared vs real — Object Storage security scanner (Yandex Cloud + AWS S3 + Azure preview)"
+version = "0.13.0"
+description = "Declared vs real — Object Storage security scanner (Yandex Cloud + AWS S3 + Azure Blob)"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -42,6 +42,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+azure = [
+    "azure-identity>=1.16",
+    "azure-mgmt-storage>=21.0",
+    "azure-storage-blob>=12.19",
+]
 dev = [
     "bandit>=1.7",
     "build>=1.2",
