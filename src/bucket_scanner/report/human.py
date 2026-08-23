@@ -20,7 +20,10 @@ def render_human(report: ScanReport, console: Console | None = None) -> None:
     out.print(banner, style="bold cyan")
     out.print()
 
-    scope_label = "account" if report.cloud == "aws" else "folder"
+    scope_label = {
+        "aws": "account",
+        "azure": "subscription",
+    }.get(report.cloud, "folder")
     if len(report.scope_ids) > 1:
         scope_text = f"folders {', '.join(report.scope_ids)}"
     else:

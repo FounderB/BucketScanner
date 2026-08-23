@@ -259,6 +259,10 @@ def run_scan(
         folder = folder_id or account_id
         method = "live"
         report_cloud = CloudProvider.AWS.value
+    elif cloud == CloudProvider.AZURE:
+        raise ScanError(
+            "Azure Blob live scan is not implemented yet. Use --fixture for offline demos."
+        )
     else:
         folder_ids = resolve_folder_ids(config, folder_id)
         if not folder_ids:

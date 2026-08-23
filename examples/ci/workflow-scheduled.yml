@@ -11,7 +11,7 @@ on:
         required: true
         default: yc-fixture
         type: choice
-        options: [yc-fixture, aws-fixture, stack-fixture]
+        options: [yc-fixture, aws-fixture, stack-fixture, azure-fixture]
 
 permissions:
   contents: read

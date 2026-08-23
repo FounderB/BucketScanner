@@ -98,6 +98,16 @@ RULES: dict[str, dict[str, str]] = {
         "why": "Account-level gaps allow new or updated buckets to become public.",
         "fix": "Enable account-level S3 Block Public Access for the AWS account.",
     },
+    "azure/container-public-access": {
+        "title": "Azure container public access",
+        "why": "Blob or container public access allows anonymous reads without SAS tokens.",
+        "fix": "Set container public access level to private in Azure Portal or IaC.",
+    },
+    "azure/account-public-access-enabled": {
+        "title": "Storage account allows public blobs",
+        "why": "allowBlobPublicAccess on the account enables public containers project-wide.",
+        "fix": "Disable allowBlobPublicAccess unless a documented exception exists.",
+    },
     "chain/leaked-credentials-exposure": {
         "title": "Leaked credentials + public buckets",
         "why": "Repo secrets plus public storage = immediate compromise path.",

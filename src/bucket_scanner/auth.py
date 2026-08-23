@@ -77,6 +77,10 @@ def resolve_credentials(
 ) -> Credentials:
     if cloud == CloudProvider.AWS:
         return resolve_aws_credentials(region=region, profile=profile)
+    if cloud == CloudProvider.AZURE:
+        raise CredentialError(
+            "Azure live credentials are not supported yet. Use --fixture for offline scans."
+        )
     return _resolve_yandex_credentials()
 
 

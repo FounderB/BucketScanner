@@ -40,6 +40,12 @@ def _probe_urls(bucket: BucketSnapshot) -> tuple[str, str]:
         else:
             host = f"{bucket.name}.s3.{region}.amazonaws.com"
         bucket_url = f"https://{host}/"
+        list_url = f"{bucket_url}?max-keys=1"
+    elif bucket.cloud == "azure":
+        account = bucket.tags.get("storage_account", bucket.name)
+        bucket_url = f"https://{account}.blob.core.windows.net/{bucket.name}"
+        list_url = f"{bucket_url}?restype=container&comp=list"
     else:
         bucket_url = f"https://{bucket.name}.{YC_STORAGE_HOST}/"
-    return bucket_url, f"{bucket_url}?max-keys=1"
+        list_url = f"{bucket_url}?max-keys=1"
+    return bucket_url, list_url

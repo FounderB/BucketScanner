@@ -17,7 +17,7 @@ CI_CONFIG = Path("examples/ci/.bucket-scanner.toml")
 
 @pytest.mark.parametrize(
     "profile",
-    ["yc-fixture", "aws-fixture", "stack-fixture"],
+    ["yc-fixture", "aws-fixture", "stack-fixture", "azure-fixture"],
 )
 def test_ci_profiles_load_and_scan(profile: str):
     app = load_config(CI_CONFIG)
