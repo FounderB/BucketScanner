@@ -1,8 +1,17 @@
-.PHONY: install hooks test lint audit scan-demo aws-demo diff-demo clean
+.PHONY: install hooks test lint audit build check-package scan-demo aws-demo diff-demo clean
 
 install:
 	python3 -m venv .venv
 	.venv/bin/pip install -e ".[dev]"
+
+build:
+	.venv/bin/pip install -q build twine
+	.venv/bin/python -m build
+	.venv/bin/twine check dist/*
+
+check-package: build
+	.venv/bin/pip install --force-reinstall dist/bucket_scanner-*.whl
+	.venv/bin/bucket-scanner --version
 
 hooks:
 	chmod +x scripts/setup-git-hooks.sh .githooks/pre-commit
