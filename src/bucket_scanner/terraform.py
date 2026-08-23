@@ -3,17 +3,29 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 BUCKET_RESOURCE = re.compile(
     r'resource\s+"(yandex_storage_bucket|aws_s3_bucket)"\s+"([^"]+)"\s*\{'
 )
 ACL_RESOURCE = re.compile(r'resource\s+"aws_s3_bucket_acl"\s+"([^"]+)"\s*\{')
+BPA_RESOURCE = re.compile(r'resource\s+"aws_s3_bucket_public_access_block"\s+"([^"]+)"\s*\{')
 STRING_FIELD = re.compile(r'^\s*(bucket|acl|bucket_prefix)\s*=\s*"([^"]*)"')
 REF_FIELD = re.compile(r"^\s*(bucket)\s*=\s*([\w.]+)")
+BOOL_FIELD = re.compile(
+    r"^\s*(block_public_acls|ignore_public_acls|block_public_policy|restrict_public_buckets)"
+    r"\s*=\s*(true|false)",
+    re.IGNORECASE,
+)
 
 SKIP_EXTENSIONS = {".tfstate", ".terraform"}
+BPA_KEYS = (
+    "BlockPublicAcls",
+    "IgnorePublicAcls",
+    "BlockPublicPolicy",
+    "RestrictPublicBuckets",
+)
 
 
 @dataclass(frozen=True)
@@ -21,6 +33,7 @@ class TerraformBucketIntent:
     resource_name: str
     bucket: str | None = None
     acl: str | None = None
+    block_public_access: dict[str, bool] = field(default_factory=dict)
     source_file: str | None = None
     resource_type: str | None = None
 
@@ -28,6 +41,7 @@ class TerraformBucketIntent:
 def parse_terraform_dir(path: Path) -> list[TerraformBucketIntent]:
     bucket_blocks: list[tuple[str, str, list[str], str]] = []
     acl_blocks: list[tuple[str, list[str], str]] = []
+    bpa_blocks: list[tuple[str, list[str], str]] = []
 
     for file_path in sorted(path.rglob("*.tf")):
         if any(part in SKIP_EXTENSIONS for part in file_path.parts):
@@ -47,6 +61,12 @@ def parse_terraform_dir(path: Path) -> list[TerraformBucketIntent]:
                 resource_name = acl_match.group(1)
                 block_lines, index = _read_block(lines, index)
                 acl_blocks.append((resource_name, block_lines, str(file_path)))
+                continue
+            bpa_match = BPA_RESOURCE.match(lines[index])
+            if bpa_match:
+                resource_name = bpa_match.group(1)
+                block_lines, index = _read_block(lines, index)
+                bpa_blocks.append((resource_name, block_lines, str(file_path)))
                 continue
             index += 1
 
@@ -80,11 +100,26 @@ def parse_terraform_dir(path: Path) -> list[TerraformBucketIntent]:
                 )
             )
 
+    for resource_name, block_lines, source_file in bpa_blocks:
+        bucket_ref, bpa = _parse_bpa_block(block_lines)
+        bucket = _resolve_bucket_ref(bucket_ref, registry) if bucket_ref else None
+        if bucket:
+            intents.append(
+                TerraformBucketIntent(
+                    resource_name=resource_name,
+                    bucket=bucket,
+                    block_public_access=bpa,
+                    source_file=source_file,
+                    resource_type="aws_s3_bucket_public_access_block",
+                )
+            )
+
     return _dedupe_intents(intents)
 
 
 def parse_terraform_file(path: Path) -> list[TerraformBucketIntent]:
-    return parse_terraform_dir(path.parent) if path.is_file() else parse_terraform_dir(path)
+    root = path if path.is_dir() else path.parent
+    return parse_terraform_dir(root)
 
 
 def _build_bucket_registry(
@@ -128,6 +163,31 @@ def _parse_acl_block(block_lines: list[str]) -> tuple[str | None, str | None]:
     return bucket_ref, acl
 
 
+def _parse_bpa_block(block_lines: list[str]) -> tuple[str | None, dict[str, bool]]:
+    bucket_ref: str | None = None
+    config: dict[str, bool] = {}
+    for line in block_lines:
+        bool_match = BOOL_FIELD.match(line)
+        if bool_match:
+            key, value = bool_match.groups()
+            config[_normalize_bpa_key(key)] = value.lower() == "true"
+            continue
+        ref_match = REF_FIELD.match(line)
+        if ref_match:
+            bucket_ref = ref_match.group(2)
+    return bucket_ref, config
+
+
+def _normalize_bpa_key(key: str) -> str:
+    mapping = {
+        "block_public_acls": "BlockPublicAcls",
+        "ignore_public_acls": "IgnorePublicAcls",
+        "block_public_policy": "BlockPublicPolicy",
+        "restrict_public_buckets": "RestrictPublicBuckets",
+    }
+    return mapping[key.lower()]
+
+
 def _resolve_bucket_ref(value: str, registry: dict[str, str]) -> str | None:
     if value in registry.values():
         return value
@@ -152,6 +212,7 @@ def _dedupe_intents(intents: list[TerraformBucketIntent]) -> list[TerraformBucke
             resource_name=intent.resource_name,
             bucket=intent.bucket,
             acl=intent.acl or current.acl,
+            block_public_access={**current.block_public_access, **intent.block_public_access},
             source_file=intent.source_file or current.source_file,
             resource_type=intent.resource_type or current.resource_type,
         )

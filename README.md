@@ -295,7 +295,7 @@ See [SECURITY.md](SECURITY.md).
 - [x] Prometheus exporter + Grafana dashboard
 - [x] Scheduled drift alerts (Telegram / webhook)
 - [x] AWS S3 backend (optional second cloud)
-- [ ] Multi-region AWS inventory
+- [x] Multi-region AWS inventory (per-bucket region resolution)
 - [ ] Scheduled scan profiles in config
 
 ---

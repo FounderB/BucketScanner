@@ -13,12 +13,14 @@ from bucket_scanner.models import BucketSnapshot
 from bucket_scanner.s3_common import safe_s3_call, snapshot_bucket
 
 
-def build_aws_s3_client(credentials: AwsCredentials) -> BaseClient:
+def build_aws_s3_client(credentials: AwsCredentials, *, region: str | None = None) -> BaseClient:
     session_kwargs: dict[str, Any] = {}
     if credentials.profile:
         session_kwargs["profile_name"] = credentials.profile
     session = boto3.Session(**session_kwargs)
-    client_kwargs: dict[str, Any] = {"region_name": credentials.region}
+    client_kwargs: dict[str, Any] = {
+        "region_name": region or credentials.region or "us-east-1",
+    }
     if credentials.access_key_id and credentials.secret_access_key:
         client_kwargs["aws_access_key_id"] = credentials.access_key_id
         client_kwargs["aws_secret_access_key"] = credentials.secret_access_key
@@ -32,7 +34,7 @@ def build_aws_sts_client(credentials: AwsCredentials) -> BaseClient:
     if credentials.profile:
         session_kwargs["profile_name"] = credentials.profile
     session = boto3.Session(**session_kwargs)
-    client_kwargs: dict[str, Any] = {"region_name": credentials.region}
+    client_kwargs: dict[str, Any] = {"region_name": credentials.region or "us-east-1"}
     if credentials.access_key_id and credentials.secret_access_key:
         client_kwargs["aws_access_key_id"] = credentials.access_key_id
         client_kwargs["aws_secret_access_key"] = credentials.secret_access_key
@@ -51,6 +53,18 @@ def list_bucket_names(client: BaseClient) -> list[str]:
     return [item["Name"] for item in response.get("Buckets", [])]
 
 
+def resolve_bucket_region(client: BaseClient, bucket_name: str, *, default: str) -> str:
+    response = safe_s3_call(client, "get_bucket_location", Bucket=bucket_name)
+    if not response:
+        return default
+    location = response.get("LocationConstraint")
+    if not location:
+        return "us-east-1"
+    if location == "EU":
+        return "eu-west-1"
+    return str(location)
+
+
 def get_account_public_access_block(
     credentials: AwsCredentials,
     account_id: str,
@@ -59,7 +73,7 @@ def get_account_public_access_block(
     if credentials.profile:
         session_kwargs["profile_name"] = credentials.profile
     session = boto3.Session(**session_kwargs)
-    client_kwargs: dict[str, Any] = {"region_name": credentials.region}
+    client_kwargs: dict[str, Any] = {"region_name": credentials.region or "us-east-1"}
     if credentials.access_key_id and credentials.secret_access_key:
         client_kwargs["aws_access_key_id"] = credentials.access_key_id
         client_kwargs["aws_secret_access_key"] = credentials.secret_access_key

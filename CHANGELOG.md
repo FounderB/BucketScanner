@@ -2,6 +2,20 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [0.6.0] - 2026-08-23
+
+### Added
+
+- **Multi-region AWS scans** — resolve each bucket's region via `GetBucketLocation`
+- **`iac/bpa-drift`** — Terraform `aws_s3_bucket_public_access_block` vs live BPA
+- `aws_resolve_regions` config (default `true`; disable for single-region fast path)
+- Region column in `bucket-scanner list` output
+- Serve/metrics unit tests
+
+### Fixed
+
+- AWS bucket metadata fetched with regional S3 client (fixes wrong-region API errors)
+
 ## [0.5.0] - 2026-08-23
 
 ### Added

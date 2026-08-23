@@ -353,6 +353,8 @@ def list_buckets(
     report = run_scan(folder_id=config.folder_id, fixture=fixture, config=config)
     for bucket in report.buckets:
         flags = []
+        if bucket.region:
+            flags.append(f"region={bucket.region}")
         if bucket.acl:
             flags.append(f"acl={bucket.acl}")
         if bucket.encryption_enabled:

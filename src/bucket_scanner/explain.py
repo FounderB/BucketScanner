@@ -73,6 +73,11 @@ RULES: dict[str, dict[str, str]] = {
         "why": "Terraform declares a bucket that does not exist live — state drift.",
         "fix": "Apply Terraform or remove stale resource block.",
     },
+    "iac/bpa-drift": {
+        "title": "Terraform Block Public Access drift",
+        "why": "IaC declares full S3 Block Public Access but live bucket settings differ.",
+        "fix": "Apply Terraform or enable all four Block Public Access settings on the bucket.",
+    },
     "tags/missing-env": {
         "title": "Missing environment tag",
         "why": "Prod-like names without env tags make blast-radius and ownership unclear.",

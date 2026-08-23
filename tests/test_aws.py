@@ -15,6 +15,7 @@ from bucket_scanner.aws.s3 import (
     get_account_public_access_block,
     list_bucket_names,
     resolve_account_id,
+    resolve_bucket_region,
     snapshot_aws_bucket,
 )
 from bucket_scanner.checks import check_bucket
@@ -163,6 +164,7 @@ def test_snapshot_bucket_aws_sets_bpa(mock_safe):
 
 @patch("bucket_scanner.scan.list_iam_access_keys")
 @patch("bucket_scanner.scan.get_account_public_access_block")
+@patch("bucket_scanner.scan.resolve_bucket_region")
 @patch("bucket_scanner.scan.resolve_account_id")
 @patch("bucket_scanner.scan.snapshot_aws_bucket")
 @patch("bucket_scanner.scan.list_bucket_names")
@@ -174,6 +176,7 @@ def test_live_aws_scan_with_mocks(
     mock_names,
     mock_snapshot,
     mock_account,
+    mock_region,
     mock_bpa,
     mock_iam,
 ):
@@ -185,6 +188,7 @@ def test_live_aws_scan_with_mocks(
     )
     mock_names.return_value = ["demo"]
     mock_account.return_value = "123456789012"
+    mock_region.return_value = "eu-west-1"
     mock_bpa.return_value = {"BlockPublicAcls": False}
     mock_snapshot.return_value = BucketSnapshot(
         name="demo",
@@ -201,6 +205,19 @@ def test_live_aws_scan_with_mocks(
     assert report.cloud == "aws"
     assert report.folder_id == "123456789012"
     assert report.method == "live"
+    mock_region.assert_called_once()
+
+
+def test_resolve_bucket_region_us_east_1():
+    client = MagicMock()
+    client.get_bucket_location.return_value = {"LocationConstraint": None}
+    assert resolve_bucket_region(client, "demo", default="us-west-2") == "us-east-1"
+
+
+def test_resolve_bucket_region_eu_legacy():
+    client = MagicMock()
+    client.get_bucket_location.return_value = {"LocationConstraint": "EU"}
+    assert resolve_bucket_region(client, "demo", default="us-east-1") == "eu-west-1"
 
 
 @patch("bucket_scanner.doctor.build_aws_s3_client")

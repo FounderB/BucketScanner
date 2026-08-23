@@ -16,6 +16,7 @@
 | `iac/acl-drift` | critical | Terraform private, live public |
 | `iac/shadow-bucket` | high | Live bucket not in Terraform |
 | `iac/ghost-bucket` | medium | Terraform bucket missing live |
+| `iac/bpa-drift` | high | Terraform BPA enabled, live incomplete |
 | `tags/missing-env` | low | Prod-like name without env tag |
 | `metadata/limited` | info | Scan without S3 static keys |
 | `secrets/yc-env-var` | critical | YC credential assignment in repo |
