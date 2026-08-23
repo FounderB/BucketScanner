@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 import httpx
 
 from bucket_scanner.models import ScanReport, Severity, severity_at_least
+from bucket_scanner.scope import scope_label_for_cloud
 
 
 @dataclass
@@ -28,18 +30,32 @@ def should_notify(report: ScanReport, config: NotifyConfig) -> bool:
 
 
 def build_summary_text(report: ScanReport) -> str:
-    scope_label = "account" if report.cloud == "aws" else "folder"
+    scope_label = scope_label_for_cloud(report.cloud)
+    delta = ""
+    if report.baseline_path:
+        delta = f" · new {report.summary.new}"
+    if report.summary.suppressed:
+        delta += f" · suppressed {report.summary.suppressed}"
     return (
         f"Bucket Scanner {report.version} ({report.cloud})\n"
         f"{scope_label}: {report.folder_id}\n"
         f"score: {report.summary.score}/100\n"
         f"CRIT {report.summary.critical} · HIGH {report.summary.high} · "
-        f"MED {report.summary.medium} · chains {report.summary.chains}\n"
+        f"MED {report.summary.medium} · chains {report.summary.chains}{delta}\n"
         f"top: {_top_findings(report, limit=3)}"
     )
 
 
+def _validate_webhook_url(url: str) -> None:
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"}:
+        raise ValueError("Webhook URL must use http or https")
+    if not parsed.netloc:
+        raise ValueError("Webhook URL must include a host")
+
+
 def send_webhook(url: str, report: ScanReport, *, timeout: float = 15.0) -> None:
+    _validate_webhook_url(url)
     payload = {
         "tool": report.tool,
         "version": report.version,

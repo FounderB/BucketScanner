@@ -296,7 +296,7 @@ jobs:
 - **Redaction** — SA key fragments, tokens, and sensitive URLs redacted in all report formats.
 - **Offline fixtures** — `examples/demo-vulnerable/` uses clearly labeled **FAKE/EXAMPLE** values only.
 
-See [SECURITY.md](SECURITY.md).
+See [SECURITY.md](SECURITY.md) and [docs/AUDIT.md](docs/AUDIT.md).
 
 ---
 
@@ -310,6 +310,8 @@ See [SECURITY.md](SECURITY.md).
 - [x] Scheduled scan profiles in config
 - [x] CI/CD profile workflows (Action + scheduled matrix)
 - [x] Baseline/delta + suppressions for production CI gates
+- [x] Security hardening + audit docs (v0.11)
+- [ ] PyPI publish (`pip install bucket-scanner`)
 - [ ] Azure Blob live scan
 - [ ] GCS backend
 

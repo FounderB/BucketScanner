@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
+from botocore.exceptions import BotoCoreError, ClientError
+
 from bucket_scanner import __version__
 from bucket_scanner.auth import Credentials, resolve_credentials
 from bucket_scanner.aws.iam import list_iam_access_keys
@@ -163,7 +165,7 @@ def _collect_aws_data(
     if scan_iam:
         try:
             sa_keys = list_iam_access_keys(credentials)
-        except Exception:
+        except (ClientError, BotoCoreError, OSError):
             sa_keys = []
     return buckets, sa_keys, account_id
 

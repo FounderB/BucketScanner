@@ -60,6 +60,15 @@ PATTERNS: list[tuple[str, re.Pattern[str], Severity, str]] = [
         "AWS access key ID pattern",
     ),
     (
+        "secrets/azure-env-var",
+        re.compile(
+            r"(?i)AZURE_(?:CLIENT_SECRET|STORAGE_ACCOUNT_KEY|TENANT_ID|CLIENT_ID)\s*=\s*"
+            r"['\"]?([^'\"\s#]{8,})"
+        ),
+        Severity.CRITICAL,
+        "Azure credential in environment assignment",
+    ),
+    (
         "secrets/aws-compat-key-in-yc-context",
         re.compile(r"(?i)(?:yandex|storage\.yandexcloud).*AWS_SECRET_ACCESS_KEY\s*=\s*(\S+)"),
         Severity.HIGH,
@@ -74,6 +83,11 @@ YC_PATTERNS = {
     "secrets/aws-compat-key-in-yc-context",
 }
 AWS_PATTERNS = {
+    "secrets/aws-env-var",
+    "secrets/aws-access-key-id",
+}
+AZURE_PATTERNS = {
+    "secrets/azure-env-var",
     "secrets/aws-env-var",
     "secrets/aws-access-key-id",
 }
@@ -125,6 +139,8 @@ def scan_repo(
 def _patterns_for_cloud(cloud: CloudProvider) -> set[str]:
     if cloud == CloudProvider.AWS:
         return AWS_PATTERNS
+    if cloud == CloudProvider.AZURE:
+        return AZURE_PATTERNS
     return YC_PATTERNS
 
 

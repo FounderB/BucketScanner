@@ -87,8 +87,8 @@ def resolve_credentials(
 def _resolve_yandex_credentials() -> Credentials:
     folder_id = _env("YC_FOLDER_ID")
     cloud_id = _env("YC_CLOUD_ID")
-    access_key_id = _env("YC_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID")
-    secret_access_key = _env("YC_SECRET_ACCESS_KEY", "AWS_SECRET_ACCESS_KEY")
+    access_key_id = _env("YC_ACCESS_KEY_ID")
+    secret_access_key = _env("YC_SECRET_ACCESS_KEY")
     iam_token = _env("YC_TOKEN", "YC_IAM_TOKEN")
 
     key_file = _env("YC_SERVICE_ACCOUNT_KEY_FILE")

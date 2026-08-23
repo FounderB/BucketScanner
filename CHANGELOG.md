@@ -2,6 +2,28 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [0.11.0] - 2026-08-23
+
+### Added
+
+- **AWS OIDC workflow template** — `examples/ci/workflow-aws-oidc.yml`
+- **Azure repo secret patterns** — `secrets/azure-env-var`
+- Docs: [ARCHITECTURE.md](docs/ARCHITECTURE.md), [AUDIT.md](docs/AUDIT.md) refresh
+
+### Security
+
+- YC credential resolver no longer falls back to `AWS_*` environment variables
+- Webhook notifications reject non-HTTP(S) URLs
+- Anonymous probe disables HTTP redirect following
+- Baseline JSON limited to 10 MB on load
+- IAM key listing catches `ClientError`/`BotoCoreError` instead of bare `Exception`
+
+### Fixed
+
+- Notify/report scope labels for Azure (`subscription`)
+- SARIF artifact URI for Azure containers
+- CLI `ClickException` display uses `str(exc)` (Click 8+ compatible)
+
 ## [0.10.0] - 2026-08-23
 
 ### Added

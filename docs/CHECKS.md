@@ -25,6 +25,9 @@
 | `secrets/aws-access-key-id` | critical | AWS access key ID pattern in repo |
 | `aws/block-public-access-incomplete` | high | S3 bucket Block Public Access incomplete |
 | `aws/account-public-access-incomplete` | high | Account Block Public Access incomplete |
+| `azure/container-public-access` | high | Azure container blob/container public access |
+| `azure/account-public-access-enabled` | high | Storage account allowBlobPublicAccess enabled |
+| `secrets/azure-env-var` | critical | Azure credential assignment in repo |
 | `iac/no-buckets-declared` | info | No storage resources in Terraform path |
 | `tracefuse/*` | varies | Imported Tracefuse cloud-related finding |
 | `chain/leaked-credentials-exposure` | critical | repo secrets + public bucket |
