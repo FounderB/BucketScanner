@@ -1,8 +1,8 @@
 name: "Scan with Bucket Scanner"
-description: "Run Bucket Scanner against Yandex Cloud or AWS S3"
+description: "Run Bucket Scanner against Yandex Cloud or AWS S3 using CLI flags or named scan profiles"
 inputs:
   cloud:
-    description: "Cloud backend: yandex or aws"
+    description: "Cloud backend when not using profile: yandex or aws"
     required: false
     default: yandex
   folder-id:
@@ -12,6 +12,13 @@ inputs:
     description: "AWS region for S3 API calls"
     required: false
     default: us-east-1
+  profile:
+    description: "Named scan profile from config-path (recommended for CI)"
+    required: false
+  config-path:
+    description: "Path to .bucket-scanner.toml with [[profiles]]"
+    required: false
+    default: .bucket-scanner.toml
   terraform-path:
     description: "Optional Terraform directory for IaC drift checks"
     required: false
@@ -27,6 +34,12 @@ inputs:
     description: "SARIF output path"
     required: false
     default: bucket-scanner.sarif
+  json-path:
+    description: "Optional JSON report output path"
+    required: false
+  prometheus-path:
+    description: "Optional Prometheus metrics output path"
+    required: false
 runs:
   using: composite
   steps:
@@ -37,24 +50,27 @@ runs:
       shell: bash
       env:
         YC_TOKEN: ${{ env.YC_TOKEN }}
-        YC_FOLDER_ID: ${{ inputs.folder-id }}
+        YC_FOLDER_ID: ${{ env.YC_FOLDER_ID }}
         AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ${{ inputs.aws-region }}
+        AWS_REGION: ${{ env.AWS_REGION }}
       run: |
         set -euo pipefail
-        args=(
-          scan
-          --cloud "${{ inputs.cloud }}"
-          --sarif "${{ inputs.sarif-path }}"
-          --fail-on "${{ inputs.fail-on }}"
-          -q
-        )
+        args=(scan --fail-on "${{ inputs.fail-on }}" -q)
+        config_path="${{ inputs.config-path }}"
+        if [ -f "$config_path" ]; then
+          args+=(--config "$config_path")
+        fi
+        if [ -n "${{ inputs.profile }}" ]; then
+          args+=(--profile "${{ inputs.profile }}")
+        else
+          args+=(--cloud "${{ inputs.cloud }}")
+          if [ "${{ inputs.cloud }}" = "aws" ]; then
+            args+=(--aws-region "${{ inputs.aws-region }}")
+          fi
+        fi
         if [ -n "${{ inputs.folder-id }}" ]; then
           args+=(--folder-id "${{ inputs.folder-id }}")
-        fi
-        if [ "${{ inputs.cloud }}" = "aws" ]; then
-          args+=(--aws-region "${{ inputs.aws-region }}")
         fi
         if [ -n "${{ inputs.terraform-path }}" ]; then
           args+=(--terraform "${{ inputs.terraform-path }}")
@@ -62,7 +78,15 @@ runs:
         if [ "${{ inputs.probe }}" = "true" ]; then
           args+=(--probe)
         fi
-        bucket-scanner "${args[@]}"
+        args+=(--sarif "${{ inputs.sarif-path }}")
+        if [ -n "${{ inputs.prometheus-path }}" ]; then
+          args+=(--prometheus "${{ inputs.prometheus-path }}")
+        fi
+        if [ -n "${{ inputs.json-path }}" ]; then
+          bucket-scanner "${args[@]}" --json | tee "${{ inputs.json-path }}"
+        else
+          bucket-scanner "${args[@]}"
+        fi
     - name: Upload SARIF
       if: always()
       uses: github/codeql-action/upload-sarif@v3

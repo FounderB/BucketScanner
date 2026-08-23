@@ -1,0 +1,24 @@
+# CI / scheduled scan profiles — offline fixtures, no cloud secrets required.
+# Docs: docs/GITHUB_ACTION.md
+
+[[profiles]]
+name = "yc-fixture"
+cloud = "yandex"
+fixture = "examples/demo-vulnerable/fixture.toml"
+fail_on = "high"
+
+[[profiles]]
+name = "aws-fixture"
+cloud = "aws"
+fixture = "examples/demo-vulnerable/fixture-aws.toml"
+terraform_path = "examples/demo-vulnerable/terraform-aws"
+fail_on = "high"
+
+[[profiles]]
+name = "stack-fixture"
+cloud = "yandex"
+fixture = "examples/demo-vulnerable/fixture.toml"
+repo_path = "examples/demo-vulnerable/repo"
+tracefuse_report = "examples/demo-vulnerable/tracefuse-report.json"
+terraform_path = "examples/demo-vulnerable/terraform"
+fail_on = "high"
