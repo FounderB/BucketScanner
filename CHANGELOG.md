@@ -13,7 +13,7 @@ All notable changes to Bucket Scanner are documented here.
 ### Changed
 
 - PyPI badge in README; CI `pypi-smoke` job installs published wheel
-- GitHub Action profile demo pins `version: "0.12.0"` from PyPI
+- GitHub Action profile demo pins `version: "0.13.0"` from PyPI
 - Publish workflow uses `twine upload --skip-existing`
 - Fixture loader preserves Azure `tags.storage_account` for probes
 
