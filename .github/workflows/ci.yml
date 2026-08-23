@@ -100,6 +100,12 @@ jobs:
           bucket-scanner diff examples/demo-vulnerable/terraform-aws \
             --cloud aws --fixture examples/demo-vulnerable/fixture-aws.toml --json \
             || test $? -eq 1
+          bucket-scanner diff examples/demo-vulnerable/terraform-azure \
+            --cloud azure --fixture examples/demo-vulnerable/fixture-azure.toml --json \
+            || test $? -eq 1
+          bucket-scanner diff examples/demo-vulnerable/terraform-gcs \
+            --cloud gcs --fixture examples/demo-vulnerable/fixture-gcs.toml --json \
+            || test $? -eq 1
       - name: Full stack demo
         run: |
           bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml \
@@ -113,7 +119,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [yc-fixture, aws-fixture, stack-fixture, azure-fixture, gcs-fixture]
+        profile: [yc-fixture, aws-fixture, stack-fixture, azure-fixture, gcs-fixture, strict-prod, audit-only]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -151,7 +157,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./action
         with:
-          version: "1.0.0"
+          version: "1.1.0"
           profile: aws-fixture
           config-path: examples/ci/.bucket-scanner.toml
           fail-on: high
@@ -159,3 +165,20 @@ jobs:
         continue-on-error: true
       - name: Verify JSON report
         run: test -s bucket-scanner.json
+
+  action-pypi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: ./action
+        with:
+          profile: yc-fixture
+          config-path: examples/ci/.bucket-scanner.toml
+          fail-on: high
+          compliance-report-path: compliance.json
+          json-path: action-pypi.json
+        continue-on-error: true
+      - run: test -s action-pypi.json && test -s compliance.json

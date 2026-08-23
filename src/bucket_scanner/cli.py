@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 
@@ -10,8 +11,9 @@ from rich.console import Console
 
 from bucket_scanner import __version__
 from bucket_scanner.cloud import CloudProvider
+from bucket_scanner.compliance import render_compliance_json
 from bucket_scanner.config import AppConfig, ScanConfig, load_config, write_default_config
-from bucket_scanner.doctor import run_doctor
+from bucket_scanner.doctor import build_doctor_report, run_doctor
 from bucket_scanner.explain import explain_rule
 from bucket_scanner.gate import apply_gate, write_baseline_report
 from bucket_scanner.models import ScanReport, Severity
@@ -162,10 +164,19 @@ def main() -> None:
 
 @main.command()
 @click.option("--config", "config_path", type=click.Path(path_type=Path))
-def doctor(config_path: Path | None) -> None:
+@click.option("--cloud", type=click.Choice(CLOUD_CHOICES, case_sensitive=False), default=None)
+@click.option("--json", "as_json", is_flag=True, help="Emit JSON health report.")
+def doctor(config_path: Path | None, cloud: str | None, as_json: bool) -> None:
     """Check credentials, folder access, and API reachability."""
-    _ = _load_app_config(config_path)
-    raise SystemExit(run_doctor(console))
+    app_config = _load_app_config(config_path)
+    scan_config = app_config.scan
+    if cloud:
+        scan_config.cloud = CloudProvider.parse(cloud)
+    if as_json:
+        report = build_doctor_report(cloud=scan_config.cloud, config=scan_config)
+        click.echo(json.dumps(report, indent=2))
+        raise SystemExit(int(report["exit_code"]))
+    raise SystemExit(run_doctor(console, cloud=scan_config.cloud, config=scan_config))
 
 
 @main.command()
@@ -226,6 +237,11 @@ def doctor(config_path: Path | None) -> None:
     default=False,
     help="Send configured webhook/Telegram alerts.",
 )
+@click.option(
+    "--compliance-report",
+    type=click.Path(path_type=Path),
+    help="Write compliance control aggregation JSON.",
+)
 @click.option("-q", "--quiet", is_flag=True, help="Minimal output for CI.")
 def scan(
     folder_ids: tuple[str, ...],
@@ -250,6 +266,7 @@ def scan(
     telegram_chat_id: str | None,
     notify: bool,
     quiet: bool,
+    compliance_report: Path | None,
 ) -> None:
     """Scan Object Storage buckets in a folder."""
     try:
@@ -309,6 +326,11 @@ def scan(
         prometheus_path.write_text(render_prometheus(report), encoding="utf-8")
         if not quiet and not as_json:
             console.print(f"[green]Prometheus metrics written to[/green] {prometheus_path}")
+
+    if compliance_report:
+        compliance_report.write_text(render_compliance_json(report), encoding="utf-8")
+        if not quiet and not as_json:
+            console.print(f"[green]Compliance report written to[/green] {compliance_report}")
 
     notify_config = NotifyConfig(
         webhook_url=webhook or app_config.notify.webhook_url,

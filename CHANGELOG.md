@@ -2,6 +2,24 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [1.1.0] - 2026-08-23
+
+### Added
+
+- **Terraform drift for Azure + GCS** — `azurerm_storage_container`, `google_storage_bucket`, IAM members
+- Example Terraform: `terraform-azure/`, `terraform-gcs/`; CI profiles wire `terraform_path`
+- **`doctor --json`** and CLI **`--cloud`** override for all backends
+- **`--compliance-report`** — JSON aggregation by CIS / NIST / SOC2 control tags
+- Expanded compliance tags for `iac/*` and `tracefuse/*` rules
+- **Tracefuse** Azure/GCS cloud markers; [docs/TRACEFUSE.md](docs/TRACEFUSE.md)
+- Policy profiles: `strict-prod`, `audit-only` + example workflows
+- GitHub Action: Azure/GCS env, `tracefuse-report`, `repo-path`, `compliance-report-path`
+
+### Changed
+
+- Action and docs pin `@v1.1.0` / `bucket-scanner==1.1.0`
+- Grafana/Prometheus docs cover all four clouds
+
 ## [1.0.0] - 2026-08-23
 
 ### Added

@@ -19,6 +19,17 @@ CLOUD_MARKERS = (
     "amazon",
     "secretsmanager",
     "s3.amazonaws.com",
+    "azure",
+    "azurerm",
+    "blob.core.windows.net",
+    "storage.azure",
+    "client_secret",
+    "gcp",
+    "google",
+    "gserviceaccount",
+    "storage.googleapis.com",
+    "google_storage",
+    "service_account",
 )
 
 

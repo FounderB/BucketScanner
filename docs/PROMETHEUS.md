@@ -26,8 +26,8 @@ bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml \
 
 Labels:
 
-- `cloud` — `yandex` or `aws`
-- `scope_id` — Yandex folder ID, comma-joined folders, or AWS account ID
+- `cloud` — `yandex`, `aws`, `azure`, or `gcs`
+- `scope_id` — Yandex folder ID, Azure subscription, GCP project, or AWS account ID
 
 ## Grafana
 

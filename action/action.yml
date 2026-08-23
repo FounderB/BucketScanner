@@ -1,16 +1,16 @@
 name: "Scan with Bucket Scanner"
-description: "Run Bucket Scanner against Yandex Cloud or AWS S3 using CLI flags or named scan profiles"
+description: "Run Bucket Scanner against Yandex Cloud, AWS S3, Azure Blob, or GCS using CLI flags or named scan profiles"
 inputs:
   version:
-    description: "Install bucket-scanner from PyPI at this version (e.g. 0.12.0)"
+    description: "Install bucket-scanner from PyPI at this version (e.g. 1.1.0)"
     required: false
     default: ""
   cloud:
-    description: "Cloud backend when not using profile: yandex or aws"
+    description: "Cloud backend when not using profile: yandex, aws, azure, or gcs"
     required: false
     default: yandex
   folder-id:
-    description: "Yandex Cloud folder ID (yandex cloud) or scope label"
+    description: "Yandex folder ID, Azure subscription ID, or GCP project ID"
     required: false
   aws-region:
     description: "AWS region for S3 API calls"
@@ -26,6 +26,12 @@ inputs:
   terraform-path:
     description: "Optional Terraform directory for IaC drift checks"
     required: false
+  repo-path:
+    description: "Optional repository root for secret pattern scan"
+    required: false
+  tracefuse-report:
+    description: "Optional Tracefuse JSON report for cross-stack findings"
+    required: false
   probe:
     description: "Enable anonymous reachability probe"
     required: false
@@ -40,6 +46,9 @@ inputs:
     default: bucket-scanner.sarif
   json-path:
     description: "Optional JSON report output path"
+    required: false
+  compliance-report-path:
+    description: "Optional compliance control aggregation JSON path"
     required: false
   baseline-path:
     description: "Previous JSON report for delta (new_findings)"
@@ -71,6 +80,13 @@ runs:
         AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ env.AWS_REGION }}
+        AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
+        AZURE_TENANT_ID: ${{ env.AZURE_TENANT_ID }}
+        AZURE_CLIENT_SECRET: ${{ env.AZURE_CLIENT_SECRET }}
+        AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ env.GOOGLE_APPLICATION_CREDENTIALS }}
+        GCP_PROJECT: ${{ env.GCP_PROJECT }}
+        GOOGLE_CLOUD_PROJECT: ${{ env.GOOGLE_CLOUD_PROJECT }}
       run: |
         set -euo pipefail
         args=(scan --fail-on "${{ inputs.fail-on }}" -q)
@@ -92,6 +108,12 @@ runs:
         if [ -n "${{ inputs.terraform-path }}" ]; then
           args+=(--terraform "${{ inputs.terraform-path }}")
         fi
+        if [ -n "${{ inputs.repo-path }}" ]; then
+          args+=(--repo "${{ inputs.repo-path }}")
+        fi
+        if [ -n "${{ inputs.tracefuse-report }}" ]; then
+          args+=(--tracefuse-report "${{ inputs.tracefuse-report }}")
+        fi
         if [ -n "${{ inputs.baseline-path }}" ]; then
           args+=(--baseline "${{ inputs.baseline-path }}")
         fi
@@ -100,6 +122,9 @@ runs:
         fi
         if [ "${{ inputs.probe }}" = "true" ]; then
           args+=(--probe)
+        fi
+        if [ -n "${{ inputs.compliance-report-path }}" ]; then
+          args+=(--compliance-report "${{ inputs.compliance-report-path }}")
         fi
         args+=(--sarif "${{ inputs.sarif-path }}")
         if [ -n "${{ inputs.prometheus-path }}" ]; then
