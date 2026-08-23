@@ -7,6 +7,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from bucket_scanner.models import ScanReport, Severity
+from bucket_scanner.scope import scope_label_for_cloud
 
 
 def render_human(report: ScanReport, console: Console | None = None) -> None:
@@ -20,10 +21,7 @@ def render_human(report: ScanReport, console: Console | None = None) -> None:
     out.print(banner, style="bold cyan")
     out.print()
 
-    scope_label = {
-        "aws": "account",
-        "azure": "subscription",
-    }.get(report.cloud, "folder")
+    scope_label = scope_label_for_cloud(report.cloud)
     if len(report.scope_ids) > 1:
         scope_text = f"folders {', '.join(report.scope_ids)}"
     else:

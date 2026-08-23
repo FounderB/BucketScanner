@@ -14,7 +14,7 @@ def probe_bucket(bucket: BucketSnapshot, *, timeout: float = 10.0) -> BucketSnap
     anonymous_readable = False
     anonymous_listable = False
 
-    with httpx.Client(timeout=timeout, follow_redirects=True) as client:
+    with httpx.Client(timeout=timeout, follow_redirects=False) as client:
         head = client.head(bucket_url)
         if head.status_code in {200, 206}:
             anonymous_readable = True

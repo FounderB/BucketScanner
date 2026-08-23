@@ -107,8 +107,10 @@ def _finalize_gate(
 
 
 def _scan_scope_ready(config: ScanConfig, fixture: Path | None) -> bool:
-    if fixture or config.cloud == CloudProvider.AWS:
+    if fixture:
         return True
+    if config.cloud in {CloudProvider.AWS, CloudProvider.AZURE}:
+        return config.cloud == CloudProvider.AWS
     return bool(resolve_folder_ids(config))
 
 
@@ -257,7 +259,7 @@ def scan(
             fixture=fixture,
         )
     except click.ClickException as exc:
-        console.print(f"[red]error:[/red] {exc.message}")
+        console.print(f"[red]error:[/red] {exc}")
         raise SystemExit(2) from exc
     try:
         threshold, new_only = _parse_fail_policy(
@@ -266,7 +268,7 @@ def scan(
             baseline_path=baseline or config.baseline_path,
         )
     except click.ClickException as exc:
-        console.print(f"[red]error:[/red] {exc.message}")
+        console.print(f"[red]error:[/red] {exc}")
         raise SystemExit(2) from exc
 
     try:
@@ -362,7 +364,7 @@ def serve(
             fixture=fixture,
         )
     except click.ClickException as exc:
-        console.print(f"[red]error:[/red] {exc.message}")
+        console.print(f"[red]error:[/red] {exc}")
         raise SystemExit(2) from exc
     if terraform_path:
         config.terraform_path = terraform_path
@@ -410,7 +412,7 @@ def inspect(
             fixture=fixture,
         )
     except click.ClickException as exc:
-        console.print(f"[red]error:[/red] {exc.message}")
+        console.print(f"[red]error:[/red] {exc}")
         raise SystemExit(2) from exc
     report = run_scan(folder_id=None, fixture=fixture, config=config)
     matches = [item for item in report.findings if item.bucket == bucket]
@@ -456,7 +458,7 @@ def chain(
             fixture=fixture,
         )
     except click.ClickException as exc:
-        console.print(f"[red]error:[/red] {exc.message}")
+        console.print(f"[red]error:[/red] {exc}")
         raise SystemExit(2) from exc
     if not _scan_scope_ready(config, fixture):
         console.print(
@@ -505,7 +507,7 @@ def list_buckets(
             fixture=fixture,
         )
     except click.ClickException as exc:
-        console.print(f"[red]error:[/red] {exc.message}")
+        console.print(f"[red]error:[/red] {exc}")
         raise SystemExit(2) from exc
     report = run_scan(folder_id=None, fixture=fixture, config=config)
     for bucket in report.buckets:
@@ -562,7 +564,7 @@ def diff(
             fixture=fixture,
         )
     except click.ClickException as exc:
-        console.print(f"[red]error:[/red] {exc.message}")
+        console.print(f"[red]error:[/red] {exc}")
         raise SystemExit(2) from exc
     threshold = Severity(fail_on.lower())
     try:

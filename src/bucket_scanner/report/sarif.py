@@ -20,6 +20,8 @@ def _artifact_uri(report: ScanReport, bucket: str | None) -> str:
     target = bucket or report.folder_id
     if report.cloud == "aws":
         return f"arn:aws:s3:::{target}"
+    if report.cloud == "azure":
+        return f"azure://blob/{target}"
     return f"yc://object-storage/{target}"
 
 

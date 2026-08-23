@@ -41,7 +41,13 @@ def chain_fingerprint(chain: ChainFinding) -> str:
     return f"{chain.chain_id}|{buckets}"
 
 
+MAX_BASELINE_BYTES = 10 * 1024 * 1024
+
+
 def load_baseline_report(path: Path) -> ScanReport:
+    size = path.stat().st_size
+    if size > MAX_BASELINE_BYTES:
+        raise ValueError(f"Baseline file too large ({size} bytes); limit is {MAX_BASELINE_BYTES}")
     return ScanReport.model_validate_json(path.read_text(encoding="utf-8"))
 
 

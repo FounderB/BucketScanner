@@ -1,0 +1,36 @@
+# AWS OIDC — no long-lived access keys in GitHub secrets
+#
+# Prerequisites:
+#   1. GitHub OIDC provider + IAM role with trust policy for this repo
+#   2. Role permissions: s3:ListAllMyBuckets, s3:Get* (read-only metadata)
+#
+# Replace ROLE_ARN and AWS_REGION.
+
+name: Bucket Scanner (AWS OIDC)
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/bucket-scanner-oidc
+          aws-region: eu-west-1
+      - uses: FounderB/BucketScanner/action@v0.11.0
+        with:
+          cloud: aws
+          aws-region: eu-west-1
+          fail-on: new
+          baseline-path: baselines/aws-prod.json
+          sarif-path: bucket-scanner.sarif
