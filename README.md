@@ -5,7 +5,8 @@
 <h1 align="center">Bucket Scanner</h1>
 
 <p align="center">
-  <strong>Declared vs real.</strong> Object Storage security scanner (Yandex Cloud + AWS S3 + Azure + GCS).<br/>
+  <strong>Declared vs real.</strong> · <strong>Заявленные и реальные.</strong><br/>
+  Object Storage security scanner — Yandex Cloud · AWS S3 · Azure · GCS<br/>
   What you configured · what ACL allows · what the internet can actually reach.
 </p>
 
@@ -26,6 +27,16 @@
   <a href="https://github.com/FounderB/Timeforge">Timeforge</a> ·
   <a href="https://github.com/FounderB/SignShield">SignShield</a> ·
   <b>Bucket Scanner</b>
+</p>
+
+<p align="center">
+  <a href="https://github.com/FounderB/BucketScanner/discussions">Discussions</a> ·
+  <a href="https://github.com/FounderB/BucketScanner/issues">Issues</a> ·
+  <a href="https://github.com/topics/devsecops">#devsecops</a> ·
+  <a href="https://github.com/topics/cspm">#cspm</a> ·
+  <a href="https://github.com/topics/object-storage">#object-storage</a> ·
+  <a href="https://github.com/topics/yandex-cloud">#yandex-cloud</a> ·
+  <a href="https://github.com/topics/amazon-s3">#aws-s3</a>
 </p>
 
 ---
@@ -346,6 +357,24 @@ See [SECURITY.md](SECURITY.md) and [docs/AUDIT.md](docs/AUDIT.md).
 - [x] Golden demo walkthrough ([docs/GOLDEN_DEMO.md](docs/GOLDEN_DEMO.md))
 - [x] SARIF compliance tags ([docs/COMPLIANCE.md](docs/COMPLIANCE.md))
 - [x] **v1.0 stable** — four-cloud live scan + PyPI + CI gates
+
+---
+
+## Community
+
+Questions, scan profiles, CI recipes — pick a channel:
+
+| Channel | Link |
+|---------|------|
+| **GitHub Discussions** | [FounderB/BucketScanner/discussions](https://github.com/FounderB/BucketScanner/discussions) |
+| **Issues & bugs** | [FounderB/BucketScanner/issues](https://github.com/FounderB/BucketScanner/issues) |
+| **DevSecOps catalog** | [awesome-devsecops](https://github.com/devsecops/awesome-devsecops) · [devsecops.org](https://www.devsecops.org/) |
+| **Yandex Cloud (RU)** | [Сообщество Yandex Cloud](https://yandex.cloud/ru/community) |
+| **Habr** | [#devsecops](https://habr.com/ru/search/?q=devsecops&target_type=posts) · [Object Storage](https://habr.com/ru/search/?q=object+storage+security&target_type=posts) |
+
+**GitHub topics:** [`devsecops`](https://github.com/topics/devsecops) · [`cspm`](https://github.com/topics/cspm) · [`object-storage`](https://github.com/topics/object-storage) · [`yandex-cloud`](https://github.com/topics/yandex-cloud) · [`amazon-s3`](https://github.com/topics/amazon-s3) · [`sarif`](https://github.com/topics/sarif) · [`python`](https://github.com/topics/python)
+
+**FounderB stack:** [Tracefuse](https://github.com/FounderB/Tracefuse) (supply chain) · [FluxTap](https://github.com/FounderB/FluxTap) (wire) · **Bucket Scanner** (object storage)
 
 ---
 
