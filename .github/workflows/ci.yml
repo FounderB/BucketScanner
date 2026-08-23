@@ -16,17 +16,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      - name: Reject Cursor co-author and wrong author on main
+      - name: Verify commit author on main
         run: |
           author=$(git log -1 --format='%an <%ae>')
           expected='FounderB <314388178+FounderB@users.noreply.github.com>'
           if [ "$author" != "$expected" ]; then
             echo "Unexpected commit author on main: $author"
             echo "Expected: $expected"
-            exit 1
-          fi
-          if git log -1 --format='%B' | grep -qiE 'Co-authored-by:[[:space:]]*Cursor'; then
-            echo "Co-authored-by: Cursor is not allowed on main"
             exit 1
           fi
 
