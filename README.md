@@ -5,7 +5,7 @@
 <h1 align="center">Bucket Scanner</h1>
 
 <p align="center">
-  <strong>Declared vs real.</strong> · <strong>Заявленные и реальные.</strong><br/>
+  <strong>Declared vs real.</strong><br/>
   Object Storage security scanner — Yandex Cloud · AWS S3 · Azure · GCS<br/>
   What you configured · what ACL allows · what the internet can actually reach.
 </p>
@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/AWS-S3-FF9900?style=flat-square" alt="AWS S3"/>
   <img src="https://img.shields.io/badge/SARIF-2.1.0-2ee6a6?style=flat-square" alt="SARIF 2.1.0"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-5eead4?style=flat-square" alt="MIT"/></a>
-  <img src="https://img.shields.io/badge/stable-v1.2.0-2ee6a6?style=flat-square" alt="v1.2"/>
+  <img src="https://img.shields.io/badge/stable-v1.2.1-2ee6a6?style=flat-square" alt="v1.2"/>
 </p>
 
 <p align="center">
@@ -79,7 +79,7 @@ Part of the **FounderB security stack**: [Tracefuse](https://github.com/FounderB
 
 ```bash
 pip install bucket-scanner
-# pin: pip install bucket-scanner==1.2.0
+# pin: pip install bucket-scanner==1.2.1
 bucket-scanner --help
 ```
 
@@ -364,16 +364,10 @@ See [SECURITY.md](SECURITY.md) and [docs/AUDIT.md](docs/AUDIT.md).
 
 ## Community
 
-Questions, scan profiles, CI recipes — pick a channel:
-
 | Channel | Link |
 |---------|------|
 | **GitHub Discussions** | [FounderB/BucketScanner/discussions](https://github.com/FounderB/BucketScanner/discussions) |
-| **Habr draft (RU)** | [docs/HABR.md](docs/HABR.md) |
-| **Issues & bugs** | [FounderB/BucketScanner/issues](https://github.com/FounderB/BucketScanner/issues) |
-| **DevSecOps catalog** | [awesome-devsecops](https://github.com/devsecops/awesome-devsecops) · [devsecops.org](https://www.devsecops.org/) |
-| **Yandex Cloud (RU)** | [Сообщество Yandex Cloud](https://yandex.cloud/ru/community) |
-| **Habr** | [#devsecops](https://habr.com/ru/search/?q=devsecops&target_type=posts) · [Object Storage](https://habr.com/ru/search/?q=object+storage+security&target_type=posts) |
+| **Issues** | [FounderB/BucketScanner/issues](https://github.com/FounderB/BucketScanner/issues) |
 
 **GitHub topics:** [`devsecops`](https://github.com/topics/devsecops) · [`cspm`](https://github.com/topics/cspm) · [`object-storage`](https://github.com/topics/object-storage) · [`yandex-cloud`](https://github.com/topics/yandex-cloud) · [`amazon-s3`](https://github.com/topics/amazon-s3) · [`sarif`](https://github.com/topics/sarif) · [`python`](https://github.com/topics/python)
 

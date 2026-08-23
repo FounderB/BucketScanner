@@ -12,14 +12,24 @@ All notable changes to Bucket Scanner are documented here.
 - **Profile `baseline_path`** — per-profile baseline in TOML
 - CI templates: `workflow-azure-oidc.yml`, `workflow-gcs-oidc.yml`, `workflow-baseline-prod.yml`
 - **`examples/ci/.bucket-scanner.prod.toml.example`** — copy-paste live prod config
-- [GRAFANA.md](docs/GRAFANA.md) — VM/systemd/Prometheus deployment (Block O lab)
-- [HABR.md](docs/HABR.md) — article draft (RU)
+- [GRAFANA.md](docs/GRAFANA.md) — VM/systemd/Prometheus deployment guide
 - `examples/systemd/bucket-scanner-serve.service`, `examples/prometheus/scrape-bucket-scanner.yml`
 
 ### Changed
 
 - AWS/Azure/GCS OIDC workflow templates pin `@v1.1.0`+; baseline gate in CI matrix
-- README: fix stale Azure line; link Habr draft
+- README: fix stale Azure line
+
+## [1.2.1] - 2026-08-23
+
+### Changed
+
+- GitHub docs English-only: remove social/article drafts from the repo
+- GitHub repository description set to English
+
+### Removed
+
+- `docs/HABR.md` (keep local drafts under `local/`, gitignored)
 
 ## [1.1.0] - 2026-08-23
 
