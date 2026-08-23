@@ -5,7 +5,7 @@ install:
 	.venv/bin/pip install -e ".[dev]"
 
 hooks:
-	chmod +x scripts/setup-git-hooks.sh .githooks/pre-commit .githooks/commit-msg
+	chmod +x scripts/setup-git-hooks.sh .githooks/pre-commit
 	./scripts/setup-git-hooks.sh
 
 test:

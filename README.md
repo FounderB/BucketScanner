@@ -70,7 +70,7 @@ git clone https://github.com/FounderB/BucketScanner.git
 cd BucketScanner
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-make hooks   # block Cursor co-author trailers + wrong git author
+make hooks   # install local git author guard
 ```
 
 **Requirements:** Python **3.11+**, Yandex Cloud credentials (default) or AWS credentials (`--cloud aws`). See [docs/AWS.md](docs/AWS.md).
