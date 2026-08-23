@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from bucket_scanner.models import BucketSnapshot, Finding, Severity
-from bucket_scanner.terraform import parse_terraform_dir
+from bucket_scanner.terraform import BPA_KEYS, parse_terraform_dir
 
 PUBLIC_ACLS = {"public-read", "public-read-write", "public"}
 
@@ -108,4 +108,46 @@ def diff_terraform(
                 )
             )
 
+        findings.extend(_check_bpa_drift(intent, live_bucket, terraform_path))
+
     return findings
+
+
+def _bpa_fully_enabled(config: dict[str, bool] | None) -> bool:
+    if not config:
+        return False
+    return all(config.get(key, False) for key in BPA_KEYS)
+
+
+def _check_bpa_drift(
+    intent,
+    live_bucket: BucketSnapshot,
+    terraform_path: Path,
+) -> list[Finding]:
+    if live_bucket.cloud != "aws":
+        return []
+    declared = intent.block_public_access
+    if not declared or not _bpa_fully_enabled(declared):
+        return []
+    live = live_bucket.block_public_access or {}
+    if _bpa_fully_enabled(live):
+        return []
+    return [
+        Finding(
+            rule_id="iac/bpa-drift",
+            title="Terraform Block Public Access drift",
+            severity=Severity.HIGH,
+            message=(
+                f"Terraform declares full Block Public Access for '{intent.bucket}' "
+                "but live settings are incomplete."
+            ),
+            bucket=intent.bucket,
+            evidence={
+                "declared_block_public_access": declared,
+                "live_block_public_access": live,
+                "source_file": intent.source_file,
+                "declared_in": str(terraform_path),
+            },
+            remediation="Apply Terraform or align live bucket Block Public Access with intent.",
+        )
+    ]

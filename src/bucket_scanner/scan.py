@@ -13,6 +13,7 @@ from bucket_scanner.aws.s3 import (
     get_account_public_access_block,
     list_bucket_names,
     resolve_account_id,
+    resolve_bucket_region,
     snapshot_aws_bucket,
 )
 from bucket_scanner.chains import compose_chains
@@ -123,19 +124,35 @@ def _collect_aws_data(
     probe: bool,
     ignore: set[str],
     scan_iam: bool,
+    resolve_regions: bool,
 ) -> tuple[list[BucketSnapshot], list[ServiceAccountKeySnapshot], str]:
-    s3 = build_aws_s3_client(credentials)
+    default_region = credentials.region or "us-east-1"
+    listing_client = build_aws_s3_client(credentials, region=default_region)
     account_id = resolve_account_id(credentials)
     account_bpa = get_account_public_access_block(credentials, account_id)
+    client_cache: dict[str, object] = {default_region: listing_client}
+
+    def client_for_region(region: str):
+        if region not in client_cache:
+            client_cache[region] = build_aws_s3_client(credentials, region=region)
+        return client_cache[region]
+
     buckets: list[BucketSnapshot] = []
-    for name in list_bucket_names(s3):
+    for name in list_bucket_names(listing_client):
         if name in ignore:
             continue
+        bucket_region = default_region
+        if resolve_regions:
+            bucket_region = resolve_bucket_region(
+                listing_client,
+                name,
+                default=default_region,
+            )
         snapshot = snapshot_aws_bucket(
-            s3,
+            client_for_region(bucket_region),
             name,
             account_id=account_id,
-            region=credentials.region or "us-east-1",
+            region=bucket_region,
             account_public_access_block=account_bpa,
         )
         if probe:
@@ -185,6 +202,7 @@ def run_scan(
             probe=probe,
             ignore=ignore,
             scan_iam=config.aws_scan_iam,
+            resolve_regions=config.aws_resolve_regions,
         )
         folder = folder_id or account_id
         method = "live"

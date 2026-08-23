@@ -55,4 +55,13 @@ def test_diff_aws_acl_drift():
     findings = diff_terraform(TF_AWS.parent, buckets)
     rules = {item.rule_id for item in findings}
     assert "iac/acl-drift" in rules
+    assert "iac/bpa-drift" in rules
     assert "iac/ghost-bucket" in rules
+
+
+def test_parse_aws_bpa_intent():
+    intents = parse_terraform_file(TF_AWS)
+    by_bucket = {item.bucket: item for item in intents}
+    bpa = by_bucket["prod-backups-open"].block_public_access
+    assert bpa["BlockPublicAcls"] is True
+    assert bpa["RestrictPublicBuckets"] is True

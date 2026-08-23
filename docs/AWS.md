@@ -74,7 +74,7 @@ Same safety model as Yandex: HEAD + list metadata only, no object body download.
 | CLI flag | `--cloud yandex` | `--cloud aws` |
 | Scope | `--folder-id` | STS account ID |
 | Auth | `YC_TOKEN`, SA key, static keys | AWS profile / env keys |
-| Extra checks | YC IAM SA bindings | Block Public Access, optional IAM keys |
+| Regions | single folder | per-bucket region resolution (default) |
 
 Both backends share chains, SARIF/JSON/Prometheus output, Terraform diff, and repo secret scanning.
 

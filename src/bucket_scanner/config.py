@@ -17,6 +17,7 @@ class ScanConfig:
     aws_region: str | None = None
     aws_profile: str | None = None
     aws_scan_iam: bool = True
+    aws_resolve_regions: bool = True
     fail_on: Severity = Severity.HIGH
     probe: bool = False
     ignore_buckets: set[str] = field(default_factory=set)
@@ -56,6 +57,7 @@ folder_id = "b1gxxxxxxxxxx"
 # cloud = "yandex"  # or "aws"
 # aws_region = "us-east-1"
 # aws_profile = "default"
+# aws_resolve_regions = true
 fail_on = "high"
 probe = false
 key_age_days = 90
@@ -115,6 +117,7 @@ def load_config(path: Path | None = None) -> AppConfig:
             aws_region=scan_data.get("aws_region"),
             aws_profile=scan_data.get("aws_profile"),
             aws_scan_iam=bool(scan_data.get("aws_scan_iam", True)),
+            aws_resolve_regions=bool(scan_data.get("aws_resolve_regions", True)),
             fail_on=_parse_severity(scan_data.get("fail_on", "high")),
             probe=bool(scan_data.get("probe", False)),
             ignore_buckets=set(ignore),
