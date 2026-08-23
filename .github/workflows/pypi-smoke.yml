@@ -1,0 +1,46 @@
+# Verify the latest PyPI wheel after a successful release (avoids race with publish job)
+name: PyPI smoke
+
+on:
+  workflow_run:
+    workflows: ["Publish to PyPI"]
+    types: [completed]
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pypi-smoke:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install latest from PyPI
+        run: |
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            if pip install "bucket-scanner>=1.3.0"; then
+              break
+            fi
+            if [ "$attempt" -eq 12 ]; then
+              echo "PyPI package not available after retries"
+              exit 1
+            fi
+            echo "Waiting for PyPI index (attempt $attempt/12)..."
+            sleep 30
+          done
+          bucket-scanner --version
+      - name: Fixture scan from PyPI package
+        run: |
+          bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml \
+            --fail-on high -q || test $? -eq 1
+      - name: Init preset from PyPI wheel
+        run: |
+          bucket-scanner init --preset yc-prod --force /tmp/bs-pypi-init
+          test -s /tmp/bs-pypi-init/.bucket-scanner.toml
