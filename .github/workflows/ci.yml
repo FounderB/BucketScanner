@@ -46,7 +46,7 @@ jobs:
         run: bandit -r src -q
       - name: pip-audit
         run: |
-          pip install --upgrade pip
+          pip install --upgrade pip "setuptools>=83"
           pip-audit
 
   package:
@@ -82,7 +82,7 @@ jobs:
           bucket-scanner scan --cloud aws --fixture examples/demo-vulnerable/fixture-aws.toml \
             --fail-on high -q || test $? -eq 1
           bucket-scanner diff examples/demo-vulnerable/terraform-aws \
-            --cloud aws --fixture examples/demo-vulnerable/fixture-aws.toml --json -q \
+            --cloud aws --fixture examples/demo-vulnerable/fixture-aws.toml --json \
             || test $? -eq 1
       - name: Full stack demo
         run: |
