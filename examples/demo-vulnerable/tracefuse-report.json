@@ -1,0 +1,12 @@
+{
+  "findings": [
+    {
+      "rule_id": "secrets/yc-token",
+      "title": "Yandex Cloud token in repository",
+      "severity": "critical",
+      "message": "FAKE / EXAMPLE Tracefuse finding for cross-stack demo.",
+      "file": "src/config.py",
+      "resource": "src/config.py"
+    }
+  ]
+}

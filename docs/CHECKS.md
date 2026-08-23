@@ -1,0 +1,27 @@
+# Checks reference
+
+| Rule ID | Severity | Description |
+|---------|----------|-------------|
+| `acl/public-read` | critical | Bucket ACL allows anonymous read |
+| `acl/public-read-write` | critical | Bucket ACL allows anonymous write |
+| `policy/overly-permissive` | high | Bucket policy wider than expected |
+| `encryption/disabled` | high | Default encryption not enabled |
+| `logging/disabled` | medium | Access logging off |
+| `versioning/disabled` | medium | Object versioning off |
+| `lifecycle/aggressive-expiration` | medium | Short retention on prod-like bucket |
+| `iam/stale-static-key` | high | SA static key older than policy |
+| `iam/over-privileged-sa` | high | SA has storage.admin on many buckets |
+| `probe/anonymous-list` | critical | Anonymous ListObjects confirmed |
+| `probe/anonymous-read-confirmed` | critical | Anonymous read despite private ACL |
+| `iac/acl-drift` | critical | Terraform private, live public |
+| `iac/shadow-bucket` | high | Live bucket not in Terraform |
+| `iac/ghost-bucket` | medium | Terraform bucket missing live |
+| `tags/missing-env` | low | Prod-like name without env tag |
+| `metadata/limited` | info | Scan without S3 static keys |
+| `secrets/yc-env-var` | critical | YC credential assignment in repo |
+| `secrets/yc-static-key` | critical | YC static key pattern in repo |
+| `tracefuse/*` | varies | Imported Tracefuse YC-related finding |
+| `chain/leaked-credentials-exposure` | critical | repo secrets + public bucket |
+| `chain/silent-exfil` | critical | public-read + no-logging + no-versioning |
+
+Use `bucket-scanner explain <rule-id>` for remediation steps.

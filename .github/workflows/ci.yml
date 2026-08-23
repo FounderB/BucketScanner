@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  commit-identity:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Reject Cursor co-author and wrong author on main
+        run: |
+          author=$(git log -1 --format='%an <%ae>')
+          expected='FounderB <314388178+FounderB@users.noreply.github.com>'
+          if [ "$author" != "$expected" ]; then
+            echo "Unexpected commit author on main: $author"
+            echo "Expected: $expected"
+            exit 1
+          fi
+          if git log -1 --format='%B' | grep -qiE 'Co-authored-by:[[:space:]]*Cursor'; then
+            echo "Co-authored-by: Cursor is not allowed on main"
+            exit 1
+          fi
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Ruff
+        run: ruff check .
+      - name: Pytest with coverage
+        run: pytest -q --cov=bucket_scanner --cov-report=term-missing --cov-fail-under=75
+      - name: Bandit
+        run: bandit -r src -q
+      - name: pip-audit
+        run: |
+          pip install --upgrade pip
+          pip-audit
+
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install .
+      - name: Fixture scan
+        run: |
+          bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml \
+            --sarif /tmp/report.sarif --fail-on high -q
+          bucket-scanner scan --cloud aws --fixture examples/demo-vulnerable/fixture-aws.toml \
+            --fail-on high -q
+      - name: Full stack demo
+        run: |
+          bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml \
+            --repo examples/demo-vulnerable/repo \
+            --tracefuse-report examples/demo-vulnerable/tracefuse-report.json \
+            --prometheus /tmp/metrics.prom --fail-on high -q
+          test -s /tmp/metrics.prom

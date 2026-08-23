@@ -1,0 +1,16 @@
+#!/bin/sh
+# Reject Cursor co-author trailers injected by tooling.
+
+set -eu
+
+msg_file=$1
+
+if grep -qiE 'Co-authored-by:[[:space:]]*Cursor' "$msg_file"; then
+  echo "error: remove 'Co-authored-by: Cursor' from the commit message" >&2
+  exit 1
+fi
+
+if grep -qiE 'Co-authored-by:[[:space:]]*cursoragent@cursor\.com' "$msg_file"; then
+  echo "error: remove Cursor co-author trailer from the commit message" >&2
+  exit 1
+fi

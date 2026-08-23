@@ -1,0 +1,14 @@
+#!/bin/sh
+# Block commits authored outside FounderB identity in this repository.
+
+set -eu
+
+author=$(git var GIT_AUTHOR_IDENT 2>/dev/null || true)
+expected='FounderB <314388178+FounderB@users.noreply.github.com>'
+
+if [ "$author" != "$expected" ]; then
+  echo "error: commit author must be $expected" >&2
+  echo "  got: ${author:-unknown}" >&2
+  echo "hint: run scripts/setup-git-hooks.sh and commit with --author=\"$expected\"" >&2
+  exit 1
+fi

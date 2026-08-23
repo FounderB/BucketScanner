@@ -1,0 +1,31 @@
+{
+  "title": "Bucket Scanner",
+  "uid": "bucket-scanner-founderB",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Risk score",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [{"expr": "bucket_scanner_score", "refId": "A"}]
+    },
+    {
+      "type": "stat",
+      "title": "Critical findings",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "targets": [
+        {"expr": "bucket_scanner_findings_total{severity=\"critical\"}", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Findings by severity",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {"expr": "bucket_scanner_findings_total", "legendFormat": "{{severity}}", "refId": "A"}
+      ]
+    }
+  ]
+}
