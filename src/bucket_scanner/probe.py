@@ -1,0 +1,45 @@
+"""Anonymous reachability probes for Object Storage buckets."""
+
+from __future__ import annotations
+
+import httpx
+
+from bucket_scanner.models import BucketSnapshot
+
+YC_STORAGE_HOST = "storage.yandexcloud.net"
+
+
+def probe_bucket(bucket: BucketSnapshot, *, timeout: float = 10.0) -> BucketSnapshot:
+    bucket_url, list_url = _probe_urls(bucket)
+    anonymous_readable = False
+    anonymous_listable = False
+
+    with httpx.Client(timeout=timeout, follow_redirects=True) as client:
+        head = client.head(bucket_url)
+        if head.status_code in {200, 206}:
+            anonymous_readable = True
+
+        listing = client.get(list_url)
+        if listing.status_code == 200 and "<ListBucketResult" in listing.text:
+            anonymous_listable = True
+            anonymous_readable = True
+
+    return bucket.model_copy(
+        update={
+            "anonymous_readable": anonymous_readable,
+            "anonymous_listable": anonymous_listable,
+        }
+    )
+
+
+def _probe_urls(bucket: BucketSnapshot) -> tuple[str, str]:
+    if bucket.cloud == "aws":
+        region = bucket.region or "us-east-1"
+        if region == "us-east-1":
+            host = f"{bucket.name}.s3.amazonaws.com"
+        else:
+            host = f"{bucket.name}.s3.{region}.amazonaws.com"
+        bucket_url = f"https://{host}/"
+    else:
+        bucket_url = f"https://{bucket.name}.{YC_STORAGE_HOST}/"
+    return bucket_url, f"{bucket_url}?max-keys=1"

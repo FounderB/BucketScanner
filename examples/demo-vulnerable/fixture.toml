@@ -1,0 +1,27 @@
+# FAKE / EXAMPLE — do not use against real infrastructure
+
+folder_id = "b1gFAKEFOLDER00000001"
+cloud_id = "b1gFAKECLOUD000000001"
+
+[[buckets]]
+name = "prod-backups-open"
+acl = "public-read"
+encryption = false
+logging = false
+versioning = false
+notes = "CRITICAL chain candidate — public read without audit trail"
+
+[[buckets]]
+name = "internal-logs-secure"
+acl = "private"
+encryption = true
+logging = true
+versioning = true
+notes = "Expected clean baseline"
+
+[service_accounts]
+[[service_accounts.keys]]
+sa_id = "ajeFAKESERVICEACCOUNT01"
+age_days = 412
+roles = ["storage.admin"]
+notes = "Stale static key with broad storage access — HIGH"

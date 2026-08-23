@@ -1,0 +1,36 @@
+name: "Scan with Bucket Scanner"
+description: "Run Bucket Scanner against a Yandex Cloud folder"
+inputs:
+  folder-id:
+    description: "Yandex Cloud folder ID"
+    required: true
+  fail-on:
+    description: "Severity threshold"
+    required: false
+    default: high
+  sarif-path:
+    description: "SARIF output path"
+    required: false
+    default: bucket-scanner.sarif
+runs:
+  using: composite
+  steps:
+    - name: Install Bucket Scanner
+      shell: bash
+      run: pip install .
+    - name: Scan
+      shell: bash
+      env:
+        YC_TOKEN: ${{ env.YC_TOKEN }}
+        YC_FOLDER_ID: ${{ inputs.folder-id }}
+      run: |
+        bucket-scanner scan \
+          --folder-id "${{ inputs.folder-id }}" \
+          --sarif "${{ inputs.sarif-path }}" \
+          --fail-on "${{ inputs.fail-on }}" \
+          -q
+    - name: Upload SARIF
+      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.sarif-path }}

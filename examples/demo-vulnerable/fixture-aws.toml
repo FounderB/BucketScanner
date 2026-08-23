@@ -1,0 +1,35 @@
+# FAKE / EXAMPLE — AWS S3 offline demo fixture
+
+cloud = "aws"
+folder_id = "123456789012"
+
+[account_public_access_block]
+BlockPublicAcls = false
+IgnorePublicAcls = false
+BlockPublicPolicy = false
+RestrictPublicBuckets = false
+
+[[buckets]]
+name = "prod-backups-open"
+region = "us-east-1"
+acl = "public-read"
+encryption = false
+logging = false
+versioning = false
+block_public_access = { BlockPublicAcls = false, IgnorePublicAcls = false, BlockPublicPolicy = false, RestrictPublicBuckets = false }
+
+[[buckets]]
+name = "internal-logs-secure"
+region = "us-east-1"
+acl = "private"
+encryption = true
+logging = true
+versioning = true
+block_public_access = { BlockPublicAcls = true, IgnorePublicAcls = true, BlockPublicPolicy = true, RestrictPublicBuckets = true }
+
+[service_accounts]
+[[service_accounts.keys]]
+sa_id = "deploy-bot"
+key_id = "AKIAFAKEACCESSKEY01"
+age_days = 412
+roles = ["iam-user"]
