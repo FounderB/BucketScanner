@@ -2,6 +2,17 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [0.8.0] - 2026-08-23
+
+### Added
+
+- **CI/CD profiles** — `profile` + `config-path` inputs on GitHub Action
+- `examples/ci/.bucket-scanner.toml` with fixture profiles (`yc-fixture`, `aws-fixture`, `stack-fixture`)
+- Copy-ready workflow templates: `examples/ci/workflow-scheduled.yml`, `workflow-live.yml`
+- `.github/workflows/scheduled-scan.yml` — weekly fixture scan + artifact upload
+- CI jobs: `profile-demo` matrix and `action-profile` composite action smoke test
+- Expanded `docs/GITHUB_ACTION.md` (profiles, matrix, scheduled scans)
+
 ## [0.7.0] - 2026-08-23
 
 ### Added

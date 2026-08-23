@@ -1,0 +1,33 @@
+# Scheduled scan profiles — offline fixtures (no cloud credentials).
+
+name: Scheduled scan
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      profile:
+        required: true
+        default: yc-fixture
+        type: choice
+        options: [yc-fixture, aws-fixture, stack-fixture]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: FounderB/BucketScanner/action@v0.8.0
+        with:
+          profile: ${{ github.event.inputs.profile || 'yc-fixture' }}
+          config-path: .bucket-scanner.toml
+          fail-on: high
+          sarif-path: bucket-scanner.sarif
+
+# Commit this file together with a .bucket-scanner.toml copied from
+# examples/ci/.bucket-scanner.toml (adjust paths if needed).

@@ -57,18 +57,54 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install .
-      - name: Fixture scan
+      - name: Legacy fixture scan
         run: |
           bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml \
-            --sarif /tmp/report.sarif --fail-on high -q
+            --sarif /tmp/report.sarif --fail-on high -q || test $? -eq 1
           bucket-scanner scan --cloud aws --fixture examples/demo-vulnerable/fixture-aws.toml \
-            --fail-on high -q
+            --fail-on high -q || test $? -eq 1
           bucket-scanner diff examples/demo-vulnerable/terraform-aws \
-            --cloud aws --fixture examples/demo-vulnerable/fixture-aws.toml --json -q
+            --cloud aws --fixture examples/demo-vulnerable/fixture-aws.toml --json -q \
+            || test $? -eq 1
       - name: Full stack demo
         run: |
           bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml \
             --repo examples/demo-vulnerable/repo \
             --tracefuse-report examples/demo-vulnerable/tracefuse-report.json \
-            --prometheus /tmp/metrics.prom --fail-on high -q
+            --prometheus /tmp/metrics.prom --fail-on high -q || test $? -eq 1
           test -s /tmp/metrics.prom
+
+  profile-demo:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [yc-fixture, aws-fixture, stack-fixture]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install .
+      - name: Scan profile ${{ matrix.profile }}
+        run: |
+          bucket-scanner scan \
+            --profile "${{ matrix.profile }}" \
+            --config examples/ci/.bucket-scanner.toml \
+            --sarif "/tmp/${{ matrix.profile }}.sarif" \
+            --fail-on high -q || test $? -eq 1
+          test -s "/tmp/${{ matrix.profile }}.sarif"
+
+  action-profile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./action
+        with:
+          profile: aws-fixture
+          config-path: examples/ci/.bucket-scanner.toml
+          fail-on: high
+          json-path: bucket-scanner.json
+        continue-on-error: true
+      - name: Verify JSON report
+        run: test -s bucket-scanner.json

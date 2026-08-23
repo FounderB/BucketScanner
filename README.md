@@ -297,6 +297,7 @@ See [SECURITY.md](SECURITY.md).
 - [x] AWS S3 backend (optional second cloud)
 - [x] Multi-region AWS inventory (per-bucket region resolution)
 - [x] Scheduled scan profiles in config
+- [x] CI/CD profile workflows (Action + scheduled matrix)
 
 ---
 

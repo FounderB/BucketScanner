@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bucket-scanner"
-version = "0.7.0"
+version = "0.8.0"
 description = "Declared vs real — Object Storage security scanner (Yandex Cloud + AWS S3)"
 readme = "README.md"
 license = { text = "MIT" }
