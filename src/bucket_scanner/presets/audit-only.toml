@@ -1,0 +1,11 @@
+# Report findings; gate on critical only (legacy noise tolerated)
+
+[scan]
+fail_on = "critical"
+
+[[profiles]]
+name = "audit-only"
+cloud = "yandex"
+folder_ids = ["b1gREPLACE-prod"]
+probe = false
+fail_on = "critical"

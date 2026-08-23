@@ -12,12 +12,19 @@ from rich.console import Console
 from bucket_scanner import __version__
 from bucket_scanner.cloud import CloudProvider
 from bucket_scanner.compliance import render_compliance_json
-from bucket_scanner.config import AppConfig, ScanConfig, load_config, write_default_config
+from bucket_scanner.config import (
+    AppConfig,
+    ScanConfig,
+    load_config,
+    write_default_config,
+    write_preset_config,
+)
 from bucket_scanner.doctor import build_doctor_report, run_doctor
 from bucket_scanner.explain import explain_rule
 from bucket_scanner.gate import apply_gate, write_baseline_report
 from bucket_scanner.models import ScanReport, Severity
 from bucket_scanner.notify import NotifyConfig, notify_all
+from bucket_scanner.presets import PRESET_NAMES
 from bucket_scanner.report.human import render_human
 from bucket_scanner.report.json_report import render_json
 from bucket_scanner.report.prometheus import render_prometheus
@@ -168,12 +175,24 @@ def main() -> None:
 
 @main.command()
 @click.option("--config", "config_path", type=click.Path(path_type=Path))
+@click.option("--profile", "profile_name", help="Named scan profile from config.")
 @click.option("--cloud", type=click.Choice(CLOUD_CHOICES, case_sensitive=False), default=None)
 @click.option("--json", "as_json", is_flag=True, help="Emit JSON health report.")
-def doctor(config_path: Path | None, cloud: str | None, as_json: bool) -> None:
+def doctor(
+    config_path: Path | None,
+    profile_name: str | None,
+    cloud: str | None,
+    as_json: bool,
+) -> None:
     """Check credentials, folder access, and API reachability."""
     app_config = _load_app_config(config_path)
     scan_config = app_config.scan
+    if profile_name:
+        profile = app_config.profiles.get(profile_name)
+        if profile is None:
+            console.print(f"[red]error:[/red] Unknown profile: {profile_name}")
+            raise SystemExit(2)
+        profile.apply_to(scan_config)
     if cloud:
         scan_config.cloud = CloudProvider.parse(cloud)
     if as_json:
@@ -653,16 +672,26 @@ def explain(rule_id: str) -> None:
 
 @main.command()
 @click.option("--force", is_flag=True, help="Overwrite existing .bucket-scanner.toml")
+@click.option(
+    "--preset",
+    type=click.Choice(PRESET_NAMES, case_sensitive=False),
+    default=None,
+    help="Write a production or CI preset config.",
+)
 @click.argument("path", default=".", type=click.Path(path_type=Path))
-def init(force: bool, path: Path) -> None:
+def init(force: bool, preset: str | None, path: Path) -> None:
     """Write a starter .bucket-scanner.toml configuration file."""
     target = path / ".bucket-scanner.toml"
     try:
-        write_default_config(target, force=force)
-    except FileExistsError as exc:
+        if preset:
+            write_preset_config(target, preset, force=force)
+        else:
+            write_default_config(target, force=force)
+    except (FileExistsError, ValueError) as exc:
         console.print(f"[red]error:[/red] {exc}")
         raise SystemExit(2) from exc
-    console.print(f"[green]Wrote[/green] {target}")
+    label = f"preset {preset}" if preset else "default template"
+    console.print(f"[green]Wrote[/green] {target} ({label})")
     raise SystemExit(0)
 
 

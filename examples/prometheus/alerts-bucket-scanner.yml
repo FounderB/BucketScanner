@@ -1,0 +1,20 @@
+groups:
+  - name: bucket-scanner
+    rules:
+      - alert: BucketScannerNewFindings
+        expr: bucket_scanner_new_total > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "New bucket scanner findings detected"
+          description: "scope={{ $labels.scope_id }} cloud={{ $labels.cloud }} new={{ $value }}"
+
+      - alert: BucketScannerHighRiskScore
+        expr: bucket_scanner_score >= 50
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Bucket scanner risk score elevated"
+          description: "score={{ $value }} scope={{ $labels.scope_id }}"

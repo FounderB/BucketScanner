@@ -1,0 +1,28 @@
+# Local Prometheus + Grafana for bucket-scanner serve metrics
+# Usage:
+#   bucket-scanner serve --profile yc-fixture --config examples/ci/.bucket-scanner.toml --addr 0.0.0.0:9090
+#   docker compose -f examples/docker-compose/prometheus-grafana.yml up
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../prometheus/alerts-bucket-scanner.yml:/etc/prometheus/alerts.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  grafana-data:

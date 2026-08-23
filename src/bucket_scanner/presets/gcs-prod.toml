@@ -1,0 +1,14 @@
+# GCS production — set folder_ids / GCP_PROJECT
+# Docs: docs/OIDC.md
+
+[scan]
+fail_on = "high"
+probe = true
+
+[[profiles]]
+name = "gcs-prod"
+cloud = "gcs"
+folder_ids = ["my-prod-project", "my-backup-project"]
+probe = true
+fail_on = "high"
+terraform_path = "terraform"

@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/AWS-S3-FF9900?style=flat-square" alt="AWS S3"/>
   <img src="https://img.shields.io/badge/SARIF-2.1.0-2ee6a6?style=flat-square" alt="SARIF 2.1.0"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-5eead4?style=flat-square" alt="MIT"/></a>
-  <img src="https://img.shields.io/badge/stable-v1.2.1-2ee6a6?style=flat-square" alt="v1.2"/>
+  <img src="https://img.shields.io/badge/stable-v1.3.0-2ee6a6?style=flat-square" alt="v1.3"/>
 </p>
 
 <p align="center">
@@ -79,7 +79,7 @@ Part of the **FounderB security stack**: [Tracefuse](https://github.com/FounderB
 
 ```bash
 pip install bucket-scanner
-# pin: pip install bucket-scanner==1.2.1
+# pin: pip install bucket-scanner==1.3.0
 bucket-scanner --help
 ```
 
@@ -94,7 +94,7 @@ make hooks   # install local git author guard
 ```
 
 See [docs/PYPI.md](docs/PYPI.md) for version pins and maintainer publishing.  
-**Golden demo:** [docs/GOLDEN_DEMO.md](docs/GOLDEN_DEMO.md) · **Compliance tags:** [docs/COMPLIANCE.md](docs/COMPLIANCE.md)
+**Start here:** [docs/QUICKSTART.md](docs/QUICKSTART.md) · **Golden demo:** [docs/GOLDEN_DEMO.md](docs/GOLDEN_DEMO.md) · **Compliance:** [docs/COMPLIANCE.md](docs/COMPLIANCE.md)
 
 **Requirements:** Python **3.11+**, Yandex Cloud credentials (default) or AWS credentials (`--cloud aws`). See [docs/AWS.md](docs/AWS.md).
 
@@ -221,10 +221,36 @@ Use Bucket Scanner when you need one gate that answers **“what does this folde
 
 ---
 
+## Who is this for?
+
+| Audience | Fit |
+|----------|-----|
+| Platform / DevSecOps (5–50 people) | CI gate on Object Storage drift |
+| Terraform + S3-compatible storage | IaC vs live ACL/BPA checks |
+| YC / AWS primary | Most tested path; Azure/GCS supported |
+| Full-account CSPM replacement | No — narrow storage focus |
+
+**5-minute path:** [docs/QUICKSTART.md](docs/QUICKSTART.md) · **Rollout:** [docs/MIGRATION.md](docs/MIGRATION.md) · **OIDC CI:** [docs/OIDC.md](docs/OIDC.md)
+
+---
+
+## Comparison (honest)
+
+| | Bucket Scanner | Prowler / ScoutSuite | Checkov (storage rules) |
+|---|----------------|----------------------|-------------------------|
+| Focus | Object Storage only | Full cloud account | IaC static analysis |
+| Live API + optional probe | Yes | Yes | No (IaC) |
+| Terraform **live drift** | Yes | Limited | IaC only |
+| Baseline delta (`fail-on new`) | Yes | Varies | Varies |
+| Cross-stack (Tracefuse + repo) | Yes | No | Partial |
+| SARIF + compliance JSON | Yes | Varies | Yes |
+
+---
+
 ## CLI
 
 ```bash
-bucket-scanner init [--force] [path]           # write .bucket-scanner.toml
+bucket-scanner init [--preset yc-prod|aws-prod|...] [--force] [path]
 bucket-scanner doctor                          # creds, folder access, API health
 bucket-scanner explain <rule-id>               # remediation (e.g. acl/public-read)
 bucket-scanner scan --folder-id ID             # human report

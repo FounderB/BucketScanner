@@ -1,0 +1,24 @@
+# Yandex Cloud production — edit folder_ids before live scan
+# Docs: docs/QUICKSTART.md
+
+[scan]
+fail_on = "high"
+probe = true
+key_age_days = 90
+# baseline_path = "baselines/yc-prod.json"
+
+[scan.ignore_buckets]
+names = ["public-assets-cdn"]
+
+[serve]
+addr = "127.0.0.1:9090"
+interval_seconds = 300
+profile = "yc-prod"
+
+[[profiles]]
+name = "yc-prod"
+cloud = "yandex"
+folder_ids = ["b1gREPLACE-prod", "b1gREPLACE-backup"]
+probe = true
+fail_on = "high"
+terraform_path = "terraform"

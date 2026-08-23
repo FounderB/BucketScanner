@@ -32,12 +32,14 @@ jobs:
       - name: Scan profile
         uses: ./action
         with:
+          version: "1.3.0"
           profile: ${{ github.event.inputs.profile || 'yc-fixture' }}
           config-path: examples/ci/.bucket-scanner.toml
           fail-on: high
           sarif-path: bucket-scanner.sarif
           json-path: bucket-scanner.json
           prometheus-path: bucket-scanner.prom
+          compliance-report-path: compliance.json
       - name: Upload JSON report
         if: always()
         uses: actions/upload-artifact@v4

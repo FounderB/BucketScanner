@@ -1,0 +1,19 @@
+# Common suppressions — copy into .bucket-scanner.toml
+
+[[scan.suppressions]]
+rule = "logging/disabled"
+bucket = "public-assets-cdn"
+reason = "CDN origin bucket — access logs at edge"
+expires = "2026-12-31"
+
+[[scan.suppressions]]
+rule = "acl/public-read"
+bucket = "public-assets-cdn"
+reason = "Intentional public static assets"
+expires = "2026-12-31"
+
+[[scan.suppressions]]
+rule = "versioning/disabled"
+bucket = "temp-uploads"
+reason = "Ephemeral upload staging — lifecycle enforced separately"
+expires = "2026-06-30"

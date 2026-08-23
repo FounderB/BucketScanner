@@ -96,4 +96,15 @@ bucket-scanner serve \
   --interval 60
 ```
 
+## Docker Compose (local lab)
+
+```bash
+bucket-scanner serve --profile yc-fixture \
+  --config examples/ci/.bucket-scanner.toml --addr 0.0.0.0:9090 &
+cd examples/docker-compose && docker compose -f prometheus-grafana.yml up
+```
+
+Import `examples/grafana/bucket-scanner-dashboard.json` at http://localhost:3000 (admin/admin).  
+Alert rules: `examples/prometheus/alerts-bucket-scanner.yml`
+
 See also [PROMETHEUS.md](PROMETHEUS.md).

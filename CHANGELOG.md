@@ -20,6 +20,23 @@ All notable changes to Bucket Scanner are documented here.
 - AWS/Azure/GCS OIDC workflow templates pin `@v1.1.0`+; baseline gate in CI matrix
 - README: fix stale Azure line
 
+## [1.3.0] - 2026-08-23
+
+### Added
+
+- **Medium-audience onboarding** — [QUICKSTART.md](docs/QUICKSTART.md), [MIGRATION.md](docs/MIGRATION.md), [OIDC.md](docs/OIDC.md), [POLICY_PRESETS.md](docs/POLICY_PRESETS.md)
+- **`bucket-scanner init --preset`** — shipped TOML presets in `bucket_scanner/presets/`
+- **`doctor --profile`** for CI health checks
+- **`.github/workflows/baseline-gate.yml`** and **`live-scan.yml`** (live proof templates)
+- GitHub Action: `run-doctor`, `doctor-only`, scan summary annotations from JSON
+- **Docker Compose** Prometheus/Grafana stack + alert rules
+- **Suppressions example** — `examples/suppressions/common.toml.example`
+- README comparison table and “who is this for” section
+
+### Changed
+
+- Action pins `@v1.3.0`; scheduled/baseline workflows upload compliance JSON
+
 ## [1.2.1] - 2026-08-23
 
 ### Changed

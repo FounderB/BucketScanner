@@ -1,0 +1,89 @@
+# Live scan — requires repository secrets (disabled on fork PRs without secrets)
+name: Live scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Profile from .bucket-scanner.toml
+        default: yc-prod
+        type: string
+  schedule:
+    - cron: "0 7 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  doctor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use prod config if present
+        run: |
+          if [ ! -f .bucket-scanner.toml ]; then
+            cp examples/ci/.bucket-scanner.prod.toml.example .bucket-scanner.toml
+          fi
+      - uses: FounderB/BucketScanner/action@v1.3.0
+        with:
+          version: "1.3.0"
+          profile: ${{ github.event.inputs.profile || 'yc-prod' }}
+          config-path: .bucket-scanner.toml
+          run-doctor: "true"
+          doctor-only: "true"
+        env:
+          YC_TOKEN: ${{ secrets.YC_TOKEN }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+        continue-on-error: true
+
+  scan:
+    runs-on: ubuntu-latest
+    needs: doctor
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use prod config if present
+        run: |
+          if [ ! -f .bucket-scanner.toml ]; then
+            cp examples/ci/.bucket-scanner.prod.toml.example .bucket-scanner.toml
+          fi
+      - uses: FounderB/BucketScanner/action@v1.3.0
+        with:
+          version: "1.3.0"
+          profile: ${{ github.event.inputs.profile || 'yc-prod' }}
+          config-path: .bucket-scanner.toml
+          fail-on: high
+          sarif-path: bucket-scanner.sarif
+          json-path: bucket-scanner.json
+          compliance-report-path: compliance.json
+          run-doctor: "true"
+        env:
+          YC_TOKEN: ${{ secrets.YC_TOKEN }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-scan-report
+          path: |
+            bucket-scanner.json
+            bucket-scanner.sarif
+            compliance.json
