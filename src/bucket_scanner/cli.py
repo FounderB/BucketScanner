@@ -681,6 +681,7 @@ def explain(rule_id: str) -> None:
 @click.argument("path", default=".", type=click.Path(path_type=Path))
 def init(force: bool, preset: str | None, path: Path) -> None:
     """Write a starter .bucket-scanner.toml configuration file."""
+    path.mkdir(parents=True, exist_ok=True)
     target = path / ".bucket-scanner.toml"
     try:
         if preset:

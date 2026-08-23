@@ -30,9 +30,9 @@ steps:
     with:
       role-to-assume: arn:aws:iam::ACCOUNT:role/bucket-scanner-oidc
       aws-region: eu-west-1
-  - uses: FounderB/BucketScanner/action@v1.3.0
+  - uses: FounderB/BucketScanner/action@v1.3.1
     with:
-      version: "1.3.0"
+      version: "1.3.1"
       profile: aws-prod
       fail-on: new
       baseline-path: baselines/aws-prod.json

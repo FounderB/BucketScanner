@@ -31,3 +31,13 @@ def test_cli_init_preset():
         assert result.exit_code == 0
         assert Path(".bucket-scanner.toml").is_file()
         assert "audit-only" in Path(".bucket-scanner.toml").read_text(encoding="utf-8")
+
+
+def test_cli_init_preset_creates_target_dir():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(main, ["init", "--preset", "yc-prod", "--force", "nested/target"])
+        assert result.exit_code == 0
+        target = Path("nested/target/.bucket-scanner.toml")
+        assert target.is_file()
+        assert "yc-prod" in target.read_text(encoding="utf-8")
