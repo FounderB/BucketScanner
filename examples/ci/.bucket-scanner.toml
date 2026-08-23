@@ -28,3 +28,9 @@ name = "azure-fixture"
 cloud = "azure"
 fixture = "examples/demo-vulnerable/fixture-azure.toml"
 fail_on = "high"
+
+[[profiles]]
+name = "gcs-fixture"
+cloud = "gcs"
+fixture = "examples/demo-vulnerable/fixture-gcs.toml"
+fail_on = "high"

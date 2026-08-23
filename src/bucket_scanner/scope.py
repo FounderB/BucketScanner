@@ -2,4 +2,4 @@
 
 
 def scope_label_for_cloud(cloud: str) -> str:
-    return {"aws": "account", "azure": "subscription"}.get(cloud, "folder")
+    return {"aws": "account", "azure": "subscription", "gcs": "project"}.get(cloud, "folder")

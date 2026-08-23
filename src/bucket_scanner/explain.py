@@ -108,6 +108,21 @@ RULES: dict[str, dict[str, str]] = {
         "why": "allowBlobPublicAccess on the account enables public containers project-wide.",
         "fix": "Disable allowBlobPublicAccess unless a documented exception exists.",
     },
+    "gcs/iam-public-principal": {
+        "title": "GCS public IAM binding",
+        "why": "allUsers or allAuthenticatedUsers on a bucket enables anonymous access.",
+        "fix": "Remove public IAM bindings and use signed URLs or IAP where needed.",
+    },
+    "gcs/public-access-prevention-not-enforced": {
+        "title": "Public access prevention not enforced",
+        "why": "Inherited PAP allows buckets to become public when IAM or ACLs drift.",
+        "fix": "Set publicAccessPrevention=enforced at project or bucket level.",
+    },
+    "gcs/uniform-access-disabled": {
+        "title": "Uniform bucket-level access disabled",
+        "why": "Legacy ACL paths remain available alongside IAM policies.",
+        "fix": "Enable uniform bucket-level access and migrate ACL grants to IAM.",
+    },
     "chain/leaked-credentials-exposure": {
         "title": "Leaked credentials + public buckets",
         "why": "Repo secrets plus public storage = immediate compromise path.",

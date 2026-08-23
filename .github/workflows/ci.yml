@@ -75,8 +75,8 @@ jobs:
           python-version: "3.12"
       - name: Install from PyPI
         run: |
-          pip install bucket-scanner
-          bucket-scanner --version | grep -E '0\.13\.'
+          pip install "bucket-scanner>=0.13.0"
+          bucket-scanner --version
       - name: Fixture scan from PyPI package
         run: |
           curl -sL -o /tmp/fixture.toml \
@@ -113,7 +113,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [yc-fixture, aws-fixture, stack-fixture, azure-fixture]
+        profile: [yc-fixture, aws-fixture, stack-fixture, azure-fixture, gcs-fixture]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -151,7 +151,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./action
         with:
-          version: "0.13.0"
+          version: "0.14.0"
           profile: aws-fixture
           config-path: examples/ci/.bucket-scanner.toml
           fail-on: high

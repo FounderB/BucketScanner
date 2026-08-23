@@ -2,6 +2,19 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [0.14.0] - 2026-08-23
+
+### Added
+
+- **GCS backend (fixture-first)** — `--cloud gcs`, offline `fixture-gcs.toml`
+- GCS checks: `gcs/iam-public-principal`, `gcs/public-access-prevention-not-enforced`, `gcs/uniform-access-disabled`
+- `gcs-fixture` CI profile, `docs/GCS.md`, `make gcs-demo`
+
+### Fixed
+
+- CLI scope guard: Azure live scans work with `--folder-id` / config subscription (was blocked)
+- CI `pypi-smoke`: install `bucket-scanner>=0.13.0`
+
 ## [0.13.0] - 2026-08-23
 
 ### Added

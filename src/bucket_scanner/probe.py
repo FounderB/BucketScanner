@@ -45,6 +45,9 @@ def _probe_urls(bucket: BucketSnapshot) -> tuple[str, str]:
         account = bucket.tags.get("storage_account", bucket.name)
         bucket_url = f"https://{account}.blob.core.windows.net/{bucket.name}"
         list_url = f"{bucket_url}?restype=container&comp=list"
+    elif bucket.cloud == "gcs":
+        bucket_url = f"https://storage.googleapis.com/{bucket.name}/"
+        list_url = f"{bucket_url}?maxResults=1"
     else:
         bucket_url = f"https://{bucket.name}.{YC_STORAGE_HOST}/"
         list_url = f"{bucket_url}?max-keys=1"

@@ -15,6 +15,7 @@ on:
           - aws-fixture
           - stack-fixture
           - azure-fixture
+          - gcs-fixture
 
 permissions:
   contents: read

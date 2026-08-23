@@ -36,8 +36,9 @@ def test_cloud_provider_parse():
     assert CloudProvider.parse("aws") == CloudProvider.AWS
     assert CloudProvider.parse("s3") == CloudProvider.AWS
     assert CloudProvider.parse("yandex") == CloudProvider.YANDEX
+    assert CloudProvider.parse("gcp") == CloudProvider.GCS
     with pytest.raises(ValueError):
-        CloudProvider.parse("gcp")
+        CloudProvider.parse("unknown-cloud")
 
 
 def test_resolve_aws_credentials_env(monkeypatch):
