@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import tomllib
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
 
 from bucket_scanner.cloud import CloudProvider
+from bucket_scanner.gate import Suppression
 from bucket_scanner.models import Severity
 
 
@@ -27,6 +29,8 @@ class ScanConfig:
     terraform_path: Path | None = None
     repo_path: Path | None = None
     tracefuse_report: Path | None = None
+    baseline_path: Path | None = None
+    suppressions: list[Suppression] = field(default_factory=list)
 
 
 @dataclass
@@ -147,11 +151,40 @@ names = ["public-assets-cdn"]
 # [[scan.severity_overrides]]
 # rule = "versioning/disabled"
 # severity = "medium"
+
+# baseline_path = "baselines/prod.json"
+
+# [[scan.suppressions]]
+# rule = "logging/disabled"
+# bucket = "public-assets-cdn"
+# reason = "CDN origin bucket"
+# expires = "2026-12-31"
 """
 
 
 def _parse_severity(value: str) -> Severity:
     return Severity(value.lower())
+
+
+def _parse_date(value: str) -> date:
+    return date.fromisoformat(value)
+
+
+def _parse_suppressions(scan_data: dict) -> list[Suppression]:
+    items = scan_data.get("suppressions", [])
+    suppressions: list[Suppression] = []
+    for item in items:
+        expires_raw = item.get("expires")
+        suppressions.append(
+            Suppression(
+                rule=item["rule"],
+                bucket=item.get("bucket"),
+                resource=item.get("resource"),
+                reason=item.get("reason", ""),
+                expires=_parse_date(expires_raw) if expires_raw else None,
+            )
+        )
+    return suppressions
 
 
 def _parse_profile(item: dict) -> ScanProfile:
@@ -197,6 +230,8 @@ def load_config(path: Path | None = None) -> AppConfig:
     tracefuse_report = repo_data.get("tracefuse_report")
     terraform_path = scan_data.get("terraform_path")
     folder_ids = list(scan_data.get("folder_ids", []))
+    baseline_path = scan_data.get("baseline_path")
+    suppressions = _parse_suppressions(scan_data)
 
     profiles: dict[str, ScanProfile] = {}
     for item in data.get("profiles", []):
@@ -220,6 +255,8 @@ def load_config(path: Path | None = None) -> AppConfig:
             terraform_path=Path(terraform_path) if terraform_path else None,
             repo_path=Path(repo_path) if repo_path else None,
             tracefuse_report=Path(tracefuse_report) if tracefuse_report else None,
+            baseline_path=Path(baseline_path) if baseline_path else None,
+            suppressions=suppressions,
         ),
         notify=NotifyConfig(
             webhook_url=notify_data.get("webhook_url"),

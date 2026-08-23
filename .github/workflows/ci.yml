@@ -95,6 +95,22 @@ jobs:
             --fail-on high -q || test $? -eq 1
           test -s "/tmp/${{ matrix.profile }}.sarif"
 
+  baseline-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install .
+      - name: Baseline delta gate
+        run: |
+          bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml \
+            --write-baseline /tmp/baseline.json -q || test $? -eq 1
+          bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml \
+            --baseline /tmp/baseline.json --fail-on new -q
+          test -s /tmp/baseline.json
+
   action-profile:
     runs-on: ubuntu-latest
     steps:

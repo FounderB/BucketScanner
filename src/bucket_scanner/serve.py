@@ -8,6 +8,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from bucket_scanner.config import ScanConfig
+from bucket_scanner.gate import apply_gate
 from bucket_scanner.report.prometheus import render_prometheus
 from bucket_scanner.scan import ScanError, run_scan
 
@@ -50,6 +51,11 @@ def run_metrics_server(
                 repo_path=config.repo_path,
                 tracefuse_report=config.tracefuse_report,
                 terraform_path=config.terraform_path,
+            )
+            report = apply_gate(
+                report,
+                suppressions=config.suppressions,
+                baseline_path=config.baseline_path,
             )
             cache.update(report)
         except ScanError as exc:

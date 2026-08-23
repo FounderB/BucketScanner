@@ -12,6 +12,7 @@ from bucket_scanner.cloud import CloudProvider
 from bucket_scanner.config import AppConfig, ScanConfig, load_config, write_default_config
 from bucket_scanner.doctor import run_doctor
 from bucket_scanner.explain import explain_rule
+from bucket_scanner.gate import apply_gate, write_baseline_report
 from bucket_scanner.models import ScanReport, Severity
 from bucket_scanner.notify import NotifyConfig, notify_all
 from bucket_scanner.report.human import render_human
@@ -71,6 +72,38 @@ def _apply_scan_overrides(
         config.aws_profile = aws_profile
     if probe:
         config.probe = True
+
+
+def _parse_fail_policy(
+    fail_on: str | None,
+    config: ScanConfig,
+    *,
+    baseline_path: Path | None,
+) -> tuple[Severity, bool]:
+    if fail_on and fail_on.lower() == "new":
+        if baseline_path is None:
+            raise click.ClickException("--fail-on new requires --baseline or scan.baseline_path")
+        return config.fail_on, True
+    threshold = Severity(fail_on.lower()) if fail_on else config.fail_on
+    return threshold, False
+
+
+def _finalize_gate(
+    report: ScanReport,
+    config: ScanConfig,
+    *,
+    baseline: Path | None,
+    write_baseline: Path | None,
+) -> ScanReport:
+    baseline_path = baseline or config.baseline_path
+    report = apply_gate(
+        report,
+        suppressions=config.suppressions,
+        baseline_path=baseline_path,
+    )
+    if write_baseline:
+        write_baseline_report(report, write_baseline)
+    return report
 
 
 def _scan_scope_ready(config: ScanConfig, fixture: Path | None) -> bool:
@@ -155,8 +188,19 @@ def doctor(config_path: Path | None) -> None:
 )
 @click.option(
     "--fail-on",
-    type=click.Choice(["info", "low", "medium", "high", "critical"], case_sensitive=False),
+    type=click.Choice(["info", "low", "medium", "high", "critical", "new"], case_sensitive=False),
     default=None,
+    help="Severity gate; 'new' compares against --baseline.",
+)
+@click.option(
+    "--baseline",
+    type=click.Path(exists=True, path_type=Path),
+    help="Previous JSON report; emit new_findings delta.",
+)
+@click.option(
+    "--write-baseline",
+    type=click.Path(path_type=Path),
+    help="Write post-gate JSON report as baseline for future runs.",
 )
 @click.option("--probe", is_flag=True, help="Anonymous reachability checks (opt-in).")
 @click.option(
@@ -188,6 +232,8 @@ def scan(
     sarif: Path | None,
     prometheus_path: Path | None,
     fail_on: str | None,
+    baseline: Path | None,
+    write_baseline: Path | None,
     probe: bool,
     terraform_path: Path | None,
     repo_path: Path | None,
@@ -213,7 +259,15 @@ def scan(
     except click.ClickException as exc:
         console.print(f"[red]error:[/red] {exc.message}")
         raise SystemExit(2) from exc
-    threshold = Severity(fail_on.lower()) if fail_on else config.fail_on
+    try:
+        threshold, new_only = _parse_fail_policy(
+            fail_on,
+            config,
+            baseline_path=baseline or config.baseline_path,
+        )
+    except click.ClickException as exc:
+        console.print(f"[red]error:[/red] {exc.message}")
+        raise SystemExit(2) from exc
 
     try:
         report = run_scan(
@@ -223,6 +277,12 @@ def scan(
             terraform_path=terraform_path,
             repo_path=repo_path,
             tracefuse_report=tracefuse_report,
+        )
+        report = _finalize_gate(
+            report,
+            config,
+            baseline=baseline,
+            write_baseline=write_baseline,
         )
     except (ScanError, FileNotFoundError, ValueError) as exc:
         console.print(f"[red]error:[/red] {exc}")
@@ -254,7 +314,7 @@ def scan(
         if sent and not quiet:
             console.print(f"[green]Notifications sent via[/green] {', '.join(sent)}")
 
-    if should_fail(report, threshold):
+    if should_fail(report, threshold, new_only=new_only):
         raise SystemExit(1)
 
 
