@@ -75,12 +75,12 @@ jobs:
           python-version: "3.12"
       - name: Install from PyPI
         run: |
-          pip install "bucket-scanner>=1.0.0"
+          pip install "bucket-scanner>=1.1.0"
           bucket-scanner --version
       - name: Fixture scan from PyPI package
         run: |
           curl -sL -o /tmp/fixture.toml \
-            https://raw.githubusercontent.com/FounderB/BucketScanner/v1.0.0/examples/demo-vulnerable/fixture.toml
+            https://raw.githubusercontent.com/FounderB/BucketScanner/v1.1.0/examples/demo-vulnerable/fixture.toml
           bucket-scanner scan --fixture /tmp/fixture.toml --fail-on high -q || test $? -eq 1
 
   demo:
@@ -157,7 +157,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./action
         with:
-          version: "1.1.0"
           profile: aws-fixture
           config-path: examples/ci/.bucket-scanner.toml
           fail-on: high
