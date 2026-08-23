@@ -25,9 +25,8 @@ jobs:
           if [ ! -f .bucket-scanner.toml ]; then
             cp examples/ci/.bucket-scanner.prod.toml.example .bucket-scanner.toml
           fi
-      - uses: FounderB/BucketScanner/action@v1.3.0
+      - uses: ./action
         with:
-          version: "1.3.0"
           profile: ${{ github.event.inputs.profile || 'yc-prod' }}
           config-path: .bucket-scanner.toml
           run-doctor: "true"
@@ -56,9 +55,8 @@ jobs:
           if [ ! -f .bucket-scanner.toml ]; then
             cp examples/ci/.bucket-scanner.prod.toml.example .bucket-scanner.toml
           fi
-      - uses: FounderB/BucketScanner/action@v1.3.0
+      - uses: ./action
         with:
-          version: "1.3.0"
           profile: ${{ github.event.inputs.profile || 'yc-prod' }}
           config-path: .bucket-scanner.toml
           fail-on: high

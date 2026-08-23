@@ -24,9 +24,8 @@ jobs:
           - gcs-prod-baseline
     steps:
       - uses: actions/checkout@v4
-      - uses: FounderB/BucketScanner/action@v1.3.0
+      - uses: ./action
         with:
-          version: "1.3.0"
           profile: ${{ matrix.profile }}
           config-path: examples/ci/.bucket-scanner.toml
           fail-on: new

@@ -37,6 +37,13 @@ All notable changes to Bucket Scanner are documented here.
 
 - Action pins `@v1.3.0`; scheduled/baseline workflows upload compliance JSON
 
+## [1.3.1] - 2026-08-23
+
+### Fixed
+
+- **`init --preset`** creates the target directory when missing (e.g. `init --preset yc-prod --force /tmp/project`)
+- **CI race on release** — `pypi-smoke` retries PyPI install; repo workflows use `./action` from checkout instead of waiting for PyPI during tag push
+
 ## [1.2.1] - 2026-08-23
 
 ### Changed
