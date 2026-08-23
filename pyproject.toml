@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bucket-scanner"
-version = "0.14.0"
+version = "0.15.0"
 description = "Declared vs real — Object Storage security scanner (Yandex Cloud + AWS S3 + Azure + GCS)"
 readme = "README.md"
 license = "MIT"
@@ -46,6 +46,9 @@ azure = [
     "azure-identity>=1.16",
     "azure-mgmt-storage>=21.0",
     "azure-storage-blob>=12.19",
+]
+gcs = [
+    "google-cloud-storage>=2.18",
 ]
 dev = [
     "bandit>=1.7",

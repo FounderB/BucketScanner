@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import click
@@ -112,7 +113,9 @@ def _scan_scope_ready(config: ScanConfig, fixture: Path | None) -> bool:
     if config.cloud == CloudProvider.AWS:
         return True
     if config.cloud == CloudProvider.GCS:
-        return False
+        if resolve_folder_ids(config):
+            return True
+        return bool(os.environ.get("GCP_PROJECT") or os.environ.get("GOOGLE_CLOUD_PROJECT"))
     return bool(resolve_folder_ids(config))
 
 

@@ -34,11 +34,14 @@ def run_doctor(console: Console | None = None) -> int:
             )
             issues += 1
     elif cloud == CloudProvider.GCS:
-        out.print(
-            "[yellow]![/yellow] GCS live scan is fixture-only today "
-            "(use --fixture or --profile with fixture)"
-        )
-        return 0
+        if config.scan.folder_id:
+            out.print(f"[green]✓[/green] Config project: {config.scan.folder_id}")
+        else:
+            out.print(
+                "[yellow]![/yellow] No project in .bucket-scanner.toml "
+                "(use --folder-id or GCP_PROJECT)"
+            )
+            issues += 1
     elif config.scan.folder_id or config.scan.folder_ids:
         if config.scan.folder_ids:
             out.print(
@@ -108,6 +111,29 @@ def run_doctor(console: Console | None = None) -> int:
         out.print(
             "[green]✓[/green] Azure credential chain configured "
             "(DefaultAzureCredential / AZURE_* env / managed identity)"
+        )
+        return 1 if issues else 0
+
+    if cloud == CloudProvider.GCS:
+        try:
+            from bucket_scanner.gcs.storage import GcsDependencyError, _import_gcs
+
+            _import_gcs()
+            out.print("[green]✓[/green] GCS SDK dependencies available")
+        except GcsDependencyError as exc:
+            out.print(f"[red]✗[/red] {exc}")
+            return 2
+        project = credentials.folder_id or config.scan.folder_id
+        if project:
+            out.print(f"[green]✓[/green] GCP project: {project}")
+        else:
+            out.print(
+                "[yellow]![/yellow] GCP_PROJECT not set (pass --folder-id for live scan)"
+            )
+            issues += 1
+        out.print(
+            "[green]✓[/green] GCP credentials configured "
+            "(Application Default Credentials / GOOGLE_APPLICATION_CREDENTIALS)"
         )
         return 1 if issues else 0
 

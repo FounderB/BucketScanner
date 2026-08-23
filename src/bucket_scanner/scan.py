@@ -30,6 +30,7 @@ from bucket_scanner.cloud import CloudProvider
 from bucket_scanner.config import ScanConfig
 from bucket_scanner.diff import diff_terraform
 from bucket_scanner.fixture import load_fixture
+from bucket_scanner.gcs.storage import GcsDependencyError, collect_gcs_buckets
 from bucket_scanner.models import (
     SEVERITY_WEIGHT,
     BucketSnapshot,
@@ -191,6 +192,26 @@ def _collect_azure_data(
     return buckets, [], subscription_id
 
 
+def _collect_gcs_data(
+    credentials: Credentials,
+    *,
+    project_id: str,
+    probe: bool,
+    ignore: set[str],
+) -> tuple[list[BucketSnapshot], list[ServiceAccountKeySnapshot], str]:
+    try:
+        buckets = collect_gcs_buckets(
+            credentials,
+            project_id=project_id,
+            ignore=ignore,
+        )
+    except GcsDependencyError as exc:
+        raise ScanError(str(exc)) from exc
+    if probe:
+        buckets = [probe_bucket(bucket) for bucket in buckets]
+    return buckets, [], project_id
+
+
 def resolve_folder_ids(config: ScanConfig, folder_id: str | None = None) -> list[str]:
     if folder_id:
         return [folder_id]
@@ -299,9 +320,21 @@ def run_scan(
         method = "live"
         report_cloud = CloudProvider.AZURE.value
     elif cloud == CloudProvider.GCS:
-        raise ScanError(
-            "GCS live scan is not implemented yet. Use --fixture for offline demos."
+        credentials = resolve_credentials(cloud=CloudProvider.GCS)
+        project_id = folder_id or credentials.folder_id
+        if not project_id:
+            raise ScanError(
+                "Provide --folder-id with GCP project ID or set GCP_PROJECT / GOOGLE_CLOUD_PROJECT."
+            )
+        buckets, sa_keys, scope = _collect_gcs_data(
+            credentials,
+            project_id=project_id,
+            probe=probe,
+            ignore=ignore,
         )
+        folder = scope
+        method = "live"
+        report_cloud = CloudProvider.GCS.value
     else:
         folder_ids = resolve_folder_ids(config, folder_id)
         if not folder_ids:

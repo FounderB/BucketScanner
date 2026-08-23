@@ -5,7 +5,7 @@ Multi-cloud Object Storage security scanner: metadata APIs, optional anonymous p
 ## Pipeline
 
 1. **CLI / Action** loads flags, profiles, and `.bucket-scanner.toml`
-2. **Cloud backend** collects bucket snapshots (YC, AWS; Azure fixture-only today)
+2. **Cloud backend** collects bucket snapshots (YC, AWS, Azure, GCS)
 3. **Checks** emit normalized `Finding` records
 4. **Gate** applies suppressions and baseline delta
 5. **Chains** compose compound risks

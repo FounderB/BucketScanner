@@ -81,7 +81,8 @@ pip install -e ".[dev]"
 make hooks   # install local git author guard
 ```
 
-See [docs/PYPI.md](docs/PYPI.md) for version pins and maintainer publishing.
+See [docs/PYPI.md](docs/PYPI.md) for version pins and maintainer publishing.  
+**Golden demo:** [docs/GOLDEN_DEMO.md](docs/GOLDEN_DEMO.md)
 
 **Requirements:** Python **3.11+**, Yandex Cloud credentials (default) or AWS credentials (`--cloud aws`). See [docs/AWS.md](docs/AWS.md).
 
@@ -108,11 +109,13 @@ bucket-scanner explain azure/container-public-access
 
 Live scan uses `DefaultAzureCredential` (env vars, managed identity, Azure CLI). See [docs/AZURE.md](docs/AZURE.md).
 
-## Google Cloud Storage (fixture-first)
+## Google Cloud Storage (live + fixture)
 
 ```bash
+pip install "bucket-scanner[gcs]"
+export GCP_PROJECT=my-gcp-project
+bucket-scanner scan --cloud gcs --folder-id "$GCP_PROJECT"
 bucket-scanner scan --cloud gcs --fixture examples/demo-vulnerable/fixture-gcs.toml
-bucket-scanner explain gcs/public-access-prevention-not-enforced
 ```
 
 See [docs/GCS.md](docs/GCS.md).
@@ -338,7 +341,9 @@ See [SECURITY.md](SECURITY.md) and [docs/AUDIT.md](docs/AUDIT.md).
 - [x] PyPI package (`pip install bucket-scanner`)
 - [x] Azure Blob live scan (`pip install bucket-scanner[azure]`)
 - [x] GCS backend (fixture-first)
-- [ ] GCS live scan
+- [x] GCS live scan (`pip install bucket-scanner[gcs]`)
+- [x] Golden demo walkthrough ([docs/GOLDEN_DEMO.md](docs/GOLDEN_DEMO.md))
+- [ ] v1.0 tag + demo video
 
 ---
 

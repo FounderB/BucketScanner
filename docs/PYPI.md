@@ -6,8 +6,8 @@ Bucket Scanner is published as [`bucket-scanner`](https://pypi.org/project/bucke
 
 ```bash
 pip install bucket-scanner
-pip install "bucket-scanner[azure]"
-pip install "bucket-scanner==0.13.0"
+pip install "bucket-scanner[gcs]"
+pip install "bucket-scanner==0.15.0"
 ```
 
 ## Maintainer release
