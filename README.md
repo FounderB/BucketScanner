@@ -294,7 +294,9 @@ See [SECURITY.md](SECURITY.md).
 - [x] Tracefuse hook — leaked `YC_*` in repo → cross-finding
 - [x] Prometheus exporter + Grafana dashboard
 - [x] Scheduled drift alerts (Telegram / webhook)
-- [ ] AWS S3 parity mode (optional second backend)
+- [x] AWS S3 backend (optional second cloud)
+- [ ] Multi-region AWS inventory
+- [ ] Scheduled scan profiles in config
 
 ---
 

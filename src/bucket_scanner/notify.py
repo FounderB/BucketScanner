@@ -28,9 +28,10 @@ def should_notify(report: ScanReport, config: NotifyConfig) -> bool:
 
 
 def build_summary_text(report: ScanReport) -> str:
+    scope_label = "account" if report.cloud == "aws" else "folder"
     return (
-        f"Bucket Scanner {report.version}\n"
-        f"folder: {report.folder_id}\n"
+        f"Bucket Scanner {report.version} ({report.cloud})\n"
+        f"{scope_label}: {report.folder_id}\n"
         f"score: {report.summary.score}/100\n"
         f"CRIT {report.summary.critical} · HIGH {report.summary.high} · "
         f"MED {report.summary.medium} · chains {report.summary.chains}\n"
@@ -42,6 +43,7 @@ def send_webhook(url: str, report: ScanReport, *, timeout: float = 15.0) -> None
     payload = {
         "tool": report.tool,
         "version": report.version,
+        "cloud": report.cloud,
         "folder_id": report.folder_id,
         "summary": report.summary.model_dump(),
         "text": build_summary_text(report),

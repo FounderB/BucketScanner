@@ -20,6 +20,10 @@ def render_human(report: ScanReport, console: Console | None = None) -> None:
     out.print(banner, style="bold cyan")
     out.print()
 
+    scope_label = "account" if report.cloud == "aws" else "folder"
+    out.print(f"  cloud {report.cloud}  {scope_label} {report.folder_id}", style="dim")
+    out.print()
+
     score_bar = _score_bar(report.summary.score)
     out.print(f"  score {report.summary.score:>3}  {score_bar}")
     out.print(
@@ -46,7 +50,7 @@ def render_human(report: ScanReport, console: Console | None = None) -> None:
             )
         out.print()
 
-    table = Table(title=f"Findings · folder {report.folder_id}")
+    table = Table(title=f"Findings · {scope_label} {report.folder_id}")
     table.add_column("Severity", style="bold")
     table.add_column("Rule")
     table.add_column("Bucket")

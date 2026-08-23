@@ -15,6 +15,8 @@ SECRET_RULES = {
     "secrets/yc-env-var",
     "secrets/yc-static-key",
     "secrets/yc-sa-key-json",
+    "secrets/aws-env-var",
+    "secrets/aws-access-key-id",
     "secrets/aws-compat-key-in-yc-context",
 }
 
@@ -82,7 +84,7 @@ def compose_chains(
                 title="Leaked credentials meet public storage",
                 severity=Severity.CRITICAL,
                 message=(
-                    "YC credential material was found in repo/imported Tracefuse report while "
+                    "Cloud credential material was found in repo or Tracefuse report while "
                     f"public buckets exist ({', '.join(public_buckets[:3])}). "
                     "Assume keys are compromised."
                 ),

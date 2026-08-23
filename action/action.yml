@@ -1,9 +1,24 @@
 name: "Scan with Bucket Scanner"
-description: "Run Bucket Scanner against a Yandex Cloud folder"
+description: "Run Bucket Scanner against Yandex Cloud or AWS S3"
 inputs:
+  cloud:
+    description: "Cloud backend: yandex or aws"
+    required: false
+    default: yandex
   folder-id:
-    description: "Yandex Cloud folder ID"
-    required: true
+    description: "Yandex Cloud folder ID (yandex cloud) or scope label"
+    required: false
+  aws-region:
+    description: "AWS region for S3 API calls"
+    required: false
+    default: us-east-1
+  terraform-path:
+    description: "Optional Terraform directory for IaC drift checks"
+    required: false
+  probe:
+    description: "Enable anonymous reachability probe"
+    required: false
+    default: "false"
   fail-on:
     description: "Severity threshold"
     required: false
@@ -23,12 +38,31 @@ runs:
       env:
         YC_TOKEN: ${{ env.YC_TOKEN }}
         YC_FOLDER_ID: ${{ inputs.folder-id }}
+        AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ inputs.aws-region }}
       run: |
-        bucket-scanner scan \
-          --folder-id "${{ inputs.folder-id }}" \
-          --sarif "${{ inputs.sarif-path }}" \
-          --fail-on "${{ inputs.fail-on }}" \
+        set -euo pipefail
+        args=(
+          scan
+          --cloud "${{ inputs.cloud }}"
+          --sarif "${{ inputs.sarif-path }}"
+          --fail-on "${{ inputs.fail-on }}"
           -q
+        )
+        if [ -n "${{ inputs.folder-id }}" ]; then
+          args+=(--folder-id "${{ inputs.folder-id }}")
+        fi
+        if [ "${{ inputs.cloud }}" = "aws" ]; then
+          args+=(--aws-region "${{ inputs.aws-region }}")
+        fi
+        if [ -n "${{ inputs.terraform-path }}" ]; then
+          args+=(--terraform "${{ inputs.terraform-path }}")
+        fi
+        if [ "${{ inputs.probe }}" = "true" ]; then
+          args+=(--probe)
+        fi
+        bucket-scanner "${args[@]}"
     - name: Upload SARIF
       if: always()
       uses: github/codeql-action/upload-sarif@v3

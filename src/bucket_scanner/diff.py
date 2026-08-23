@@ -21,7 +21,7 @@ def diff_terraform(
                 rule_id="iac/no-buckets-declared",
                 title="No buckets declared in Terraform",
                 severity=Severity.INFO,
-                message=f"No yandex_storage_bucket resources found under {terraform_path}.",
+                message=f"No storage bucket resources found under {terraform_path}.",
                 evidence={"path": str(terraform_path)},
                 remediation=(
                     "Add storage resources or point --terraform at the correct module path."

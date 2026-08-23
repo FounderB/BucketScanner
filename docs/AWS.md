@@ -76,4 +76,9 @@ Same safety model as Yandex: HEAD + list metadata only, no object body download.
 | Auth | `YC_TOKEN`, SA key, static keys | AWS profile / env keys |
 | Extra checks | YC IAM SA bindings | Block Public Access, optional IAM keys |
 
-Both backends share chains, SARIF/JSON/Prometheus output, Terraform diff (YC resources today), and repo secret scanning.
+Both backends share chains, SARIF/JSON/Prometheus output, Terraform diff, and repo secret scanning.
+
+```bash
+bucket-scanner diff examples/demo-vulnerable/terraform-aws \
+  --cloud aws --fixture examples/demo-vulnerable/fixture-aws.toml
+```

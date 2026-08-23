@@ -20,7 +20,12 @@
 | `metadata/limited` | info | Scan without S3 static keys |
 | `secrets/yc-env-var` | critical | YC credential assignment in repo |
 | `secrets/yc-static-key` | critical | YC static key pattern in repo |
-| `tracefuse/*` | varies | Imported Tracefuse YC-related finding |
+| `secrets/aws-env-var` | critical | AWS credential assignment in repo |
+| `secrets/aws-access-key-id` | critical | AWS access key ID pattern in repo |
+| `aws/block-public-access-incomplete` | high | S3 bucket Block Public Access incomplete |
+| `aws/account-public-access-incomplete` | high | Account Block Public Access incomplete |
+| `iac/no-buckets-declared` | info | No storage resources in Terraform path |
+| `tracefuse/*` | varies | Imported Tracefuse cloud-related finding |
 | `chain/leaked-credentials-exposure` | critical | repo secrets + public bucket |
 | `chain/silent-exfil` | critical | public-read + no-logging + no-versioning |
 

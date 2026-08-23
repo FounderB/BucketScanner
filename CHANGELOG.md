@@ -2,6 +2,25 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [0.5.0] - 2026-08-23
+
+### Added
+
+- **AWS Terraform diff** — `aws_s3_bucket` + `aws_s3_bucket_acl` ref resolution
+- Demo: `examples/demo-vulnerable/terraform-aws/` + `fixture-aws.toml` stack
+- **AWS secret chains** — `AKIA…` / `AWS_*` patterns in `chain/leaked-credentials-exposure`
+- Tracefuse import recognizes AWS markers (`akia`, `aws_`, `amazon`)
+- `--cloud` on `inspect`, `list`, `chain`, `diff`; `serve` accepts `--terraform`, `--repo`
+- Cloud-aware human report, SARIF (`arn:aws:s3`), Prometheus (`cloud` label), notifications
+- GitHub Action inputs: `cloud`, `aws-region`, `terraform-path`, `probe`
+- AWS IAM over-privilege detection via attached policies (`AdministratorAccess`, `AmazonS3FullAccess`)
+- Config: `scan.terraform_path` loaded from TOML
+
+### Fixed
+
+- `diff` command shows IaC findings only (no unrelated bucket noise)
+- Repo secret scan respects active `--cloud` backend
+
 ## [0.4.0] - 2026-08-23
 
 ### Added
