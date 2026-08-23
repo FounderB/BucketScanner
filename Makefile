@@ -34,6 +34,9 @@ aws-demo:
 azure-demo:
 	.venv/bin/bucket-scanner scan --cloud azure --fixture examples/demo-vulnerable/fixture-azure.toml
 
+gcs-demo:
+	.venv/bin/bucket-scanner scan --cloud gcs --fixture examples/demo-vulnerable/fixture-gcs.toml
+
 scan-demo:
 	.venv/bin/bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml
 

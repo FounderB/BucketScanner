@@ -5,7 +5,7 @@
 <h1 align="center">Bucket Scanner</h1>
 
 <p align="center">
-  <strong>Declared vs real.</strong> Object Storage security scanner (Yandex Cloud + AWS S3 + Azure preview).<br/>
+  <strong>Declared vs real.</strong> Object Storage security scanner (Yandex Cloud + AWS S3 + Azure + GCS).<br/>
   What you configured · what ACL allows · what the internet can actually reach.
 </p>
 
@@ -107,6 +107,15 @@ bucket-scanner explain azure/container-public-access
 ```
 
 Live scan uses `DefaultAzureCredential` (env vars, managed identity, Azure CLI). See [docs/AZURE.md](docs/AZURE.md).
+
+## Google Cloud Storage (fixture-first)
+
+```bash
+bucket-scanner scan --cloud gcs --fixture examples/demo-vulnerable/fixture-gcs.toml
+bucket-scanner explain gcs/public-access-prevention-not-enforced
+```
+
+See [docs/GCS.md](docs/GCS.md).
 
 Live Azure inventory is planned; see [docs/AZURE.md](docs/AZURE.md).
 
@@ -328,7 +337,8 @@ See [SECURITY.md](SECURITY.md) and [docs/AUDIT.md](docs/AUDIT.md).
 - [x] Security hardening + audit docs (v0.11)
 - [x] PyPI package (`pip install bucket-scanner`)
 - [x] Azure Blob live scan (`pip install bucket-scanner[azure]`)
-- [ ] GCS backend
+- [x] GCS backend (fixture-first)
+- [ ] GCS live scan
 
 ---
 

@@ -24,7 +24,7 @@ from bucket_scanner.serve import run_metrics_server
 
 console = Console()
 
-CLOUD_CHOICES = ["yandex", "aws", "azure"]
+CLOUD_CHOICES = ["yandex", "aws", "azure", "gcs"]
 
 
 def _load_app_config(config_path: Path | None) -> AppConfig:
@@ -109,8 +109,10 @@ def _finalize_gate(
 def _scan_scope_ready(config: ScanConfig, fixture: Path | None) -> bool:
     if fixture:
         return True
-    if config.cloud in {CloudProvider.AWS, CloudProvider.AZURE}:
-        return config.cloud == CloudProvider.AWS
+    if config.cloud == CloudProvider.AWS:
+        return True
+    if config.cloud == CloudProvider.GCS:
+        return False
     return bool(resolve_folder_ids(config))
 
 

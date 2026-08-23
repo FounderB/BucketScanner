@@ -298,6 +298,10 @@ def run_scan(
         folder = scope
         method = "live"
         report_cloud = CloudProvider.AZURE.value
+    elif cloud == CloudProvider.GCS:
+        raise ScanError(
+            "GCS live scan is not implemented yet. Use --fixture for offline demos."
+        )
     else:
         folder_ids = resolve_folder_ids(config, folder_id)
         if not folder_ids:

@@ -33,6 +33,12 @@ def run_doctor(console: Console | None = None) -> int:
                 "(use --folder-id or AZURE_SUBSCRIPTION_ID)"
             )
             issues += 1
+    elif cloud == CloudProvider.GCS:
+        out.print(
+            "[yellow]![/yellow] GCS live scan is fixture-only today "
+            "(use --fixture or --profile with fixture)"
+        )
+        return 0
     elif config.scan.folder_id or config.scan.folder_ids:
         if config.scan.folder_ids:
             out.print(

@@ -27,6 +27,9 @@
 | `aws/account-public-access-incomplete` | high | Account Block Public Access incomplete |
 | `azure/container-public-access` | high | Azure container blob/container public access |
 | `azure/account-public-access-enabled` | high | Storage account allowBlobPublicAccess enabled |
+| `gcs/iam-public-principal` | high | GCS bucket IAM binding for allUsers/allAuthenticatedUsers |
+| `gcs/public-access-prevention-not-enforced` | high | publicAccessPrevention inherited or unspecified |
+| `gcs/uniform-access-disabled` | medium | Uniform bucket-level access disabled |
 | `secrets/azure-env-var` | critical | Azure credential assignment in repo |
 | `iac/no-buckets-declared` | info | No storage resources in Terraform path |
 | `tracefuse/*` | varies | Imported Tracefuse cloud-related finding |

@@ -1,0 +1,34 @@
+# FAKE / EXAMPLE — Google Cloud Storage offline demo fixture
+
+cloud = "gcs"
+folder_id = "project-FAKE-GCS-00000001"
+
+[account_public_access_block]
+public_access_prevention = "inherited"
+
+[[buckets]]
+name = "prod-backups-open"
+tags = { project_id = "fake-prod-project" }
+region = "us-central1"
+acl = "public-read"
+encryption = false
+logging = false
+versioning = false
+block_public_access = { public_access_prevention = "inherited", uniform_bucket_level_access = false, iam_public = true }
+
+[[buckets]]
+name = "internal-logs-secure"
+tags = { project_id = "fake-prod-project" }
+region = "us-central1"
+acl = "private"
+encryption = true
+logging = true
+versioning = true
+block_public_access = { public_access_prevention = "enforced", uniform_bucket_level_access = true, iam_public = false }
+
+[service_accounts]
+[[service_accounts.keys]]
+sa_id = "deploy-sa@fake-prod-project.iam.gserviceaccount.com"
+key_id = "gcs-fake-key-id"
+age_days = 365
+roles = ["roles/storage.objectAdmin"]

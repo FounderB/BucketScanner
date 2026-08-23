@@ -47,6 +47,7 @@ def check_bucket(bucket: BucketSnapshot) -> list[Finding]:
         findings.extend(_check_tags(bucket))
         findings.extend(_check_block_public_access(bucket))
         findings.extend(_check_azure_public_access(bucket))
+        findings.extend(_check_gcs_public_access(bucket))
     findings.extend(_check_probe(bucket))
     return findings
 
@@ -332,6 +333,60 @@ def _check_azure_public_access(bucket: BucketSnapshot) -> list[Finding]:
                 bucket=bucket.name,
                 evidence={"allow_blob_public_access": True},
                 remediation="Disable allowBlobPublicAccess on the storage account unless required.",
+            )
+        )
+    return findings
+
+
+def _check_gcs_public_access(bucket: BucketSnapshot) -> list[Finding]:
+    if bucket.cloud != "gcs":
+        return []
+    findings: list[Finding] = []
+    config = bucket.block_public_access or {}
+    if config.get("iam_public") is True:
+        findings.append(
+            Finding(
+                rule_id="gcs/iam-public-principal",
+                title="GCS bucket grants public IAM access",
+                severity=Severity.HIGH,
+                message=(
+                    f"Bucket '{bucket.name}' allows allUsers or allAuthenticatedUsers in IAM."
+                ),
+                bucket=bucket.name,
+                evidence={"iam_public": True},
+                remediation="Remove public IAM bindings and enforce least-privilege roles.",
+            )
+        )
+    pap = str(config.get("public_access_prevention", "unspecified")).lower()
+    account = bucket.account_public_access_block or {}
+    account_pap = str(account.get("public_access_prevention", pap)).lower()
+    effective_pap = pap if pap not in {"", "unspecified"} else account_pap
+    if effective_pap in {"inherited", "unspecified"}:
+        findings.append(
+            Finding(
+                rule_id="gcs/public-access-prevention-not-enforced",
+                title="GCS public access prevention not enforced",
+                severity=Severity.HIGH,
+                message=(
+                    f"Bucket '{bucket.name}' public access prevention is '{effective_pap}'."
+                ),
+                bucket=bucket.name,
+                evidence={"public_access_prevention": effective_pap},
+                remediation="Set publicAccessPrevention=enforced on project or bucket.",
+            )
+        )
+    if config.get("uniform_bucket_level_access") is False:
+        findings.append(
+            Finding(
+                rule_id="gcs/uniform-access-disabled",
+                title="GCS uniform bucket-level access disabled",
+                severity=Severity.MEDIUM,
+                message=(
+                    f"Bucket '{bucket.name}' still allows legacy ACL-based public access paths."
+                ),
+                bucket=bucket.name,
+                evidence={"uniform_bucket_level_access": False},
+                remediation="Enable uniform bucket-level access and migrate ACLs to IAM.",
             )
         )
     return findings
