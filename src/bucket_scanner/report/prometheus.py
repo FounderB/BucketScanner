@@ -24,6 +24,12 @@ def render_prometheus(report: ScanReport) -> str:
         "# HELP bucket_scanner_chains_total Misconfiguration chains detected",
         "# TYPE bucket_scanner_chains_total gauge",
         f"bucket_scanner_chains_total{{{labels}}} {report.summary.chains}",
+        "# HELP bucket_scanner_suppressed_total Findings suppressed by policy",
+        "# TYPE bucket_scanner_suppressed_total gauge",
+        f"bucket_scanner_suppressed_total{{{labels}}} {report.summary.suppressed}",
+        "# HELP bucket_scanner_new_total New findings vs baseline",
+        "# TYPE bucket_scanner_new_total gauge",
+        f"bucket_scanner_new_total{{{labels}}} {report.summary.new}",
         "# HELP bucket_scanner_findings_total Findings by severity",
         "# TYPE bucket_scanner_findings_total gauge",
     ]

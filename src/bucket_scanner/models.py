@@ -90,10 +90,13 @@ class ScanSummary(BaseModel):
     chains: int = 0
     score: int = 0
     buckets_scanned: int = 0
+    suppressed: int = 0
+    new: int = 0
 
 
 class ScanReport(BaseModel):
     tool: str = "bucket-scanner"
+    report_schema: str = "1.0"
     version: str
     cloud: str = "yandex"
     folder_id: str
@@ -103,6 +106,9 @@ class ScanReport(BaseModel):
     buckets: list[BucketSnapshot] = Field(default_factory=list)
     findings: list[Finding] = Field(default_factory=list)
     chains: list[ChainFinding] = Field(default_factory=list)
+    new_findings: list[Finding] = Field(default_factory=list)
+    new_chains: list[ChainFinding] = Field(default_factory=list)
+    baseline_path: str | None = None
     summary: ScanSummary = Field(default_factory=ScanSummary)
     method: str = "metadata"
 

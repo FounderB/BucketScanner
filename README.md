@@ -191,6 +191,8 @@ bucket-scanner explain <rule-id>               # remediation (e.g. acl/public-re
 bucket-scanner scan --folder-id ID             # human report
 bucket-scanner scan --folder-id ID --json      # JSON to stdout
 bucket-scanner scan --folder-id ID --sarif out.sarif --fail-on high
+bucket-scanner scan --folder-id ID --baseline baselines/prod.json --fail-on new
+bucket-scanner scan --folder-id ID --write-baseline baselines/prod.json
 bucket-scanner scan --folder-id ID --probe     # + anonymous reachability checks
 bucket-scanner inspect BUCKET                  # single-bucket deep report
 bucket-scanner chain --sa-id ID                # blast radius from one SA
@@ -307,6 +309,7 @@ See [SECURITY.md](SECURITY.md).
 - [x] Multi-region AWS inventory (per-bucket region resolution)
 - [x] Scheduled scan profiles in config
 - [x] CI/CD profile workflows (Action + scheduled matrix)
+- [x] Baseline/delta + suppressions for production CI gates
 - [ ] Azure Blob live scan
 - [ ] GCS backend
 

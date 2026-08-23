@@ -43,6 +43,13 @@ def render_human(report: ScanReport, console: Console | None = None) -> None:
     )
     if report.summary.chains:
         out.print(f"  CHAINS {report.summary.chains}", style="bold red")
+    if report.summary.suppressed:
+        out.print(f"  SUPPRESSED {report.summary.suppressed}", style="dim")
+    if report.baseline_path:
+        out.print(
+            f"  NEW vs baseline {report.summary.new}  ({report.baseline_path})",
+            style="bold yellow" if report.summary.new else "dim",
+        )
     out.print()
 
     if report.chains:

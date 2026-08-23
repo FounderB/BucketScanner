@@ -27,7 +27,7 @@ inputs:
     required: false
     default: "false"
   fail-on:
-    description: "Severity threshold"
+    description: "Severity threshold, or 'new' with baseline-path"
     required: false
     default: high
   sarif-path:
@@ -36,6 +36,12 @@ inputs:
     default: bucket-scanner.sarif
   json-path:
     description: "Optional JSON report output path"
+    required: false
+  baseline-path:
+    description: "Previous JSON report for delta (new_findings)"
+    required: false
+  write-baseline-path:
+    description: "Write post-gate JSON baseline after scan"
     required: false
   prometheus-path:
     description: "Optional Prometheus metrics output path"
@@ -74,6 +80,12 @@ runs:
         fi
         if [ -n "${{ inputs.terraform-path }}" ]; then
           args+=(--terraform "${{ inputs.terraform-path }}")
+        fi
+        if [ -n "${{ inputs.baseline-path }}" ]; then
+          args+=(--baseline "${{ inputs.baseline-path }}")
+        fi
+        if [ -n "${{ inputs.write-baseline-path }}" ]; then
+          args+=(--write-baseline "${{ inputs.write-baseline-path }}")
         fi
         if [ "${{ inputs.probe }}" = "true" ]; then
           args+=(--probe)

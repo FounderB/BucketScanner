@@ -2,6 +2,17 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [0.10.0] - 2026-08-23
+
+### Added
+
+- **Baseline / delta** — `--baseline`, `--write-baseline`, `--fail-on new`
+- **Suppressions** — `[[scan.suppressions]]` with optional `expires`
+- JSON `report_schema = "1.0"`, `new_findings`, `new_chains`, `summary.suppressed/new`
+- Prometheus: `bucket_scanner_suppressed_total`, `bucket_scanner_new_total`
+- GitHub Action inputs: `baseline-path`, `write-baseline-path`
+- Docs: [BASELINE.md](docs/BASELINE.md)
+
 ## [0.9.0] - 2026-08-23
 
 ### Added

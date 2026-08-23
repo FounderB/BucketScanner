@@ -337,11 +337,13 @@ def _build_summary(findings, chains, *, buckets_scanned: int) -> ScanSummary:
     return summary
 
 
-def should_fail(report: ScanReport, threshold: Severity) -> bool:
-    for finding in report.findings:
+def should_fail(report: ScanReport, threshold: Severity, *, new_only: bool = False) -> bool:
+    findings = report.new_findings if new_only else report.findings
+    chains = report.new_chains if new_only else report.chains
+    for finding in findings:
         if severity_at_least(finding.severity, threshold):
             return True
-    for chain in report.chains:
+    for chain in chains:
         if severity_at_least(chain.severity, threshold):
             return True
     return False

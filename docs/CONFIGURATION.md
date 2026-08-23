@@ -63,3 +63,23 @@ bucket-scanner profiles list
 ```
 
 Profile fields map to scan options (`cloud`, `folder_id`, `folder_ids`, `aws_region`, `fixture`, `terraform_path`, etc.). CLI flags still override profile values.
+
+## Baseline and suppressions
+
+See [BASELINE.md](BASELINE.md) for the full CI workflow.
+
+```toml
+[scan]
+baseline_path = "baselines/prod.json"
+
+[[scan.suppressions]]
+rule = "logging/disabled"
+bucket = "public-assets-cdn"
+reason = "CDN origin"
+expires = "2026-12-31"
+```
+
+```bash
+bucket-scanner scan --folder-id b1g... --write-baseline baselines/prod.json
+bucket-scanner scan --folder-id b1g... --baseline baselines/prod.json --fail-on new
+```
