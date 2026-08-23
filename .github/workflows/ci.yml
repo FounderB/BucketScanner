@@ -79,7 +79,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [yc-fixture, aws-fixture, stack-fixture]
+        profile: [yc-fixture, aws-fixture, stack-fixture, azure-fixture]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

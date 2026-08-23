@@ -5,7 +5,7 @@
 <h1 align="center">Bucket Scanner</h1>
 
 <p align="center">
-  <strong>Declared vs real.</strong> Object Storage security scanner (Yandex Cloud + AWS S3).<br/>
+  <strong>Declared vs real.</strong> Object Storage security scanner (Yandex Cloud + AWS S3 + Azure preview).<br/>
   What you configured · what ACL allows · what the internet can actually reach.
 </p>
 
@@ -85,6 +85,15 @@ bucket-scanner scan --cloud aws
 bucket-scanner scan --cloud aws --fixture examples/demo-vulnerable/fixture-aws.toml
 bucket-scanner doctor --cloud aws
 ```
+
+## Azure Blob (fixture-only preview)
+
+```bash
+bucket-scanner scan --cloud azure --fixture examples/demo-vulnerable/fixture-azure.toml
+bucket-scanner explain azure/container-public-access
+```
+
+Live Azure inventory is planned; see [docs/AZURE.md](docs/AZURE.md).
 
 ---
 
@@ -298,6 +307,8 @@ See [SECURITY.md](SECURITY.md).
 - [x] Multi-region AWS inventory (per-bucket region resolution)
 - [x] Scheduled scan profiles in config
 - [x] CI/CD profile workflows (Action + scheduled matrix)
+- [ ] Azure Blob live scan
+- [ ] GCS backend
 
 ---
 

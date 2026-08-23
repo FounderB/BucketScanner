@@ -22,6 +22,9 @@ audit: lint
 aws-demo:
 	.venv/bin/bucket-scanner scan --cloud aws --fixture examples/demo-vulnerable/fixture-aws.toml
 
+azure-demo:
+	.venv/bin/bucket-scanner scan --cloud azure --fixture examples/demo-vulnerable/fixture-azure.toml
+
 scan-demo:
 	.venv/bin/bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml
 

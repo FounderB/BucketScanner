@@ -46,6 +46,7 @@ def check_bucket(bucket: BucketSnapshot) -> list[Finding]:
         findings.extend(_check_lifecycle(bucket))
         findings.extend(_check_tags(bucket))
         findings.extend(_check_block_public_access(bucket))
+        findings.extend(_check_azure_public_access(bucket))
     findings.extend(_check_probe(bucket))
     return findings
 
@@ -291,6 +292,46 @@ def _check_block_public_access(bucket: BucketSnapshot) -> list[Finding]:
                 remediation=(
                     "Enable account-level S3 Block Public Access in AWS console or org policy."
                 ),
+            )
+        )
+    return findings
+
+
+def _check_azure_public_access(bucket: BucketSnapshot) -> list[Finding]:
+    if bucket.cloud != "azure":
+        return []
+    findings: list[Finding] = []
+    config = bucket.block_public_access or {}
+    public_access = str(config.get("public_access", "off")).lower()
+    if public_access in {"blob", "container"}:
+        findings.append(
+            Finding(
+                rule_id="azure/container-public-access",
+                title="Azure container allows anonymous blob access",
+                severity=Severity.HIGH,
+                message=(
+                    f"Container '{bucket.name}' public access is set to '{public_access}'."
+                ),
+                bucket=bucket.name,
+                evidence={"public_access": public_access},
+                remediation=(
+                    "Set container public access to private unless CDN requires blob access."
+                ),
+            )
+        )
+    account = bucket.account_public_access_block or {}
+    if account.get("allow_blob_public_access") is True:
+        findings.append(
+            Finding(
+                rule_id="azure/account-public-access-enabled",
+                title="Storage account allows blob public access",
+                severity=Severity.HIGH,
+                message=(
+                    f"Storage account for '{bucket.name}' has allowBlobPublicAccess enabled."
+                ),
+                bucket=bucket.name,
+                evidence={"allow_blob_public_access": True},
+                remediation="Disable allowBlobPublicAccess on the storage account unless required.",
             )
         )
     return findings

@@ -23,6 +23,8 @@ from bucket_scanner.serve import run_metrics_server
 
 console = Console()
 
+CLOUD_CHOICES = ["yandex", "aws", "azure"]
+
 
 def _load_app_config(config_path: Path | None) -> AppConfig:
     return load_config(config_path)
@@ -133,7 +135,7 @@ def doctor(config_path: Path | None) -> None:
     multiple=True,
     help="Yandex Cloud folder ID (repeat for multi-folder scan).",
 )
-@click.option("--cloud", type=click.Choice(["yandex", "aws"], case_sensitive=False), default=None)
+@click.option("--cloud", type=click.Choice(CLOUD_CHOICES, case_sensitive=False), default=None)
 @click.option("--aws-region", help="AWS region for S3 API calls (default: us-east-1).")
 @click.option("--aws-profile", help="AWS shared credentials profile name.")
 @click.option("--profile", "profile_name", help="Named scan profile from config.")
@@ -258,7 +260,7 @@ def scan(
 
 @main.command()
 @click.option("--folder-id", "folder_ids", multiple=True)
-@click.option("--cloud", type=click.Choice(["yandex", "aws"], case_sensitive=False), default=None)
+@click.option("--cloud", type=click.Choice(CLOUD_CHOICES, case_sensitive=False), default=None)
 @click.option("--aws-region")
 @click.option("--aws-profile")
 @click.option("--profile", "profile_name", help="Named scan profile from config.")
@@ -320,7 +322,7 @@ def serve(
 @main.command()
 @click.argument("bucket")
 @click.option("--folder-id", "folder_ids", multiple=True)
-@click.option("--cloud", type=click.Choice(["yandex", "aws"], case_sensitive=False), default=None)
+@click.option("--cloud", type=click.Choice(CLOUD_CHOICES, case_sensitive=False), default=None)
 @click.option("--aws-region")
 @click.option("--aws-profile")
 @click.option("--profile", "profile_name")
@@ -366,7 +368,7 @@ def inspect(
 @main.command()
 @click.option("--sa-id", required=True, help="Service account ID for blast-radius graph.")
 @click.option("--folder-id", "folder_ids", multiple=True)
-@click.option("--cloud", type=click.Choice(["yandex", "aws"], case_sensitive=False), default=None)
+@click.option("--cloud", type=click.Choice(CLOUD_CHOICES, case_sensitive=False), default=None)
 @click.option("--aws-region")
 @click.option("--aws-profile")
 @click.option("--profile", "profile_name")
@@ -416,7 +418,7 @@ def chain(
 
 @main.command("list")
 @click.option("--folder-id", "folder_ids", multiple=True)
-@click.option("--cloud", type=click.Choice(["yandex", "aws"], case_sensitive=False), default=None)
+@click.option("--cloud", type=click.Choice(CLOUD_CHOICES, case_sensitive=False), default=None)
 @click.option("--aws-region")
 @click.option("--aws-profile")
 @click.option("--profile", "profile_name")
@@ -464,7 +466,7 @@ def list_buckets(
 @main.command()
 @click.argument("terraform_path", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option("--folder-id", "folder_ids", multiple=True)
-@click.option("--cloud", type=click.Choice(["yandex", "aws"], case_sensitive=False), default=None)
+@click.option("--cloud", type=click.Choice(CLOUD_CHOICES, case_sensitive=False), default=None)
 @click.option("--aws-region")
 @click.option("--aws-profile")
 @click.option("--profile", "profile_name")

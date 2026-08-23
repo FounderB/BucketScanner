@@ -24,6 +24,12 @@ def run_doctor(console: Console | None = None) -> int:
             out.print(f"[green]✓[/green] AWS region: {config.scan.aws_region}")
         if config.scan.aws_profile:
             out.print(f"[green]✓[/green] AWS profile: {config.scan.aws_profile}")
+    elif cloud == CloudProvider.AZURE:
+        out.print(
+            "[yellow]![/yellow] Azure live scan is fixture-only today "
+            "(use --fixture or --profile with fixture)"
+        )
+        return 0
     elif config.scan.folder_id or config.scan.folder_ids:
         if config.scan.folder_ids:
             out.print(

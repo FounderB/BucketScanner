@@ -22,3 +22,9 @@ repo_path = "examples/demo-vulnerable/repo"
 tracefuse_report = "examples/demo-vulnerable/tracefuse-report.json"
 terraform_path = "examples/demo-vulnerable/terraform"
 fail_on = "high"
+
+[[profiles]]
+name = "azure-fixture"
+cloud = "azure"
+fixture = "examples/demo-vulnerable/fixture-azure.toml"
+fail_on = "high"

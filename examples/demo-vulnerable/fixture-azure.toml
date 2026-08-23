@@ -1,0 +1,34 @@
+# FAKE / EXAMPLE — Azure Blob Storage offline demo fixture
+
+cloud = "azure"
+folder_id = "sub-FAKE-AZURE-00000001"
+
+[account_public_access_block]
+allow_blob_public_access = true
+
+[[buckets]]
+name = "prod-backups-open"
+tags = { storage_account = "fakeprodstorage" }
+region = "eastus"
+acl = "public-read"
+encryption = false
+logging = false
+versioning = false
+block_public_access = { public_access = "container", allow_blob_public_access = true }
+
+[[buckets]]
+name = "internal-logs-secure"
+tags = { storage_account = "fakeprodstorage" }
+region = "eastus"
+acl = "private"
+encryption = true
+logging = true
+versioning = true
+block_public_access = { public_access = "off", allow_blob_public_access = false }
+
+[service_accounts]
+[[service_accounts.keys]]
+sa_id = "deploy-sp"
+key_id = "azure-fake-key-id"
+age_days = 365
+roles = ["Storage Blob Data Contributor"]

@@ -2,6 +2,15 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [0.9.0] - 2026-08-23
+
+### Added
+
+- **Azure Blob backend (fixture-first)** — `--cloud azure`, offline `fixture-azure.toml`
+- Azure checks: `azure/container-public-access`, `azure/account-public-access-enabled`
+- Probe URL builder for Azure blob endpoints
+- `docs/AZURE.md`, `azure-fixture` CI profile
+
 ## [0.8.0] - 2026-08-23
 
 ### Added
