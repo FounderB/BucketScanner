@@ -119,7 +119,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [yc-fixture, aws-fixture, stack-fixture, azure-fixture, gcs-fixture, strict-prod, audit-only]
+        profile: [yc-fixture, aws-fixture, stack-fixture, azure-fixture, gcs-fixture, strict-prod, audit-only, yc-prod-baseline, aws-prod-baseline]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -181,3 +181,22 @@ jobs:
           json-path: action-pypi.json
         continue-on-error: true
       - run: test -s action-pypi.json && test -s compliance.json
+
+  baseline-gate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [yc-prod-baseline, aws-prod-baseline, azure-prod-baseline, gcs-prod-baseline]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install .
+      - name: Baseline delta gate (${{ matrix.profile }})
+        run: |
+          bucket-scanner scan \
+            --profile "${{ matrix.profile }}" \
+            --config examples/ci/.bucket-scanner.toml \
+            --fail-on new -q

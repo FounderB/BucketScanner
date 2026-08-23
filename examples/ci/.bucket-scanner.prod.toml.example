@@ -1,0 +1,51 @@
+# Copy to repo root as .bucket-scanner.toml for live production scans.
+# Docs: docs/GITHUB_ACTION.md, docs/BASELINE.md, docs/GRAFANA.md
+
+[scan]
+fail_on = "high"
+probe = true
+key_age_days = 90
+# baseline_path = "baselines/prod.json"
+# terraform_path = "terraform/"
+
+[scan.ignore_buckets]
+names = ["public-assets-cdn"]
+
+[serve]
+addr = "127.0.0.1:9090"
+interval_seconds = 300
+profile = "yc-prod"
+
+[[profiles]]
+name = "yc-prod"
+cloud = "yandex"
+folder_ids = ["b1gfolder-prod", "b1gfolder-backup"]
+probe = true
+fail_on = "high"
+terraform_path = "terraform"
+
+[[profiles]]
+name = "aws-prod"
+cloud = "aws"
+aws_region = "eu-west-1"
+fail_on = "high"
+
+[[profiles]]
+name = "azure-prod"
+cloud = "azure"
+folder_ids = ["00000000-0000-0000-0000-000000000001"]
+probe = true
+fail_on = "high"
+
+[[profiles]]
+name = "gcs-prod"
+cloud = "gcs"
+folder_ids = ["my-prod-project", "my-backup-project"]
+probe = true
+fail_on = "high"
+
+# [[scan.suppressions]]
+# rule = "logging/disabled"
+# bucket = "public-assets-cdn"
+# reason = "CDN origin bucket"
+# expires = "2026-12-31"

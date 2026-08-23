@@ -2,6 +2,25 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [1.2.0] - 2026-08-23
+
+### Added
+
+- **Tier 4 field deployment** — prod profiles (`yc-prod`, `aws-prod`, `azure-prod`, `gcs-prod`) + baseline variants
+- **`baselines/`** sample JSON for `--fail-on new` gates
+- **Multi-scope Azure/GCS** — `folder_ids` loops subscriptions/projects like Yandex folders
+- **Profile `baseline_path`** — per-profile baseline in TOML
+- CI templates: `workflow-azure-oidc.yml`, `workflow-gcs-oidc.yml`, `workflow-baseline-prod.yml`
+- **`examples/ci/.bucket-scanner.prod.toml.example`** — copy-paste live prod config
+- [GRAFANA.md](docs/GRAFANA.md) — VM/systemd/Prometheus deployment (Block O lab)
+- [HABR.md](docs/HABR.md) — article draft (RU)
+- `examples/systemd/bucket-scanner-serve.service`, `examples/prometheus/scrape-bucket-scanner.yml`
+
+### Changed
+
+- AWS/Azure/GCS OIDC workflow templates pin `@v1.1.0`+; baseline gate in CI matrix
+- README: fix stale Azure line; link Habr draft
+
 ## [1.1.0] - 2026-08-23
 
 ### Added

@@ -118,6 +118,10 @@ def _scan_scope_ready(config: ScanConfig, fixture: Path | None) -> bool:
         if resolve_folder_ids(config):
             return True
         return bool(os.environ.get("GCP_PROJECT") or os.environ.get("GOOGLE_CLOUD_PROJECT"))
+    if config.cloud == CloudProvider.AZURE:
+        if resolve_folder_ids(config):
+            return True
+        return bool(os.environ.get("AZURE_SUBSCRIPTION_ID"))
     return bool(resolve_folder_ids(config))
 
 
@@ -284,8 +288,9 @@ def scan(
         console.print(f"[red]error:[/red] {exc}")
         raise SystemExit(2) from exc
     try:
+        effective_fail_on = fail_on if fail_on else ("new" if config.fail_on_new else None)
         threshold, new_only = _parse_fail_policy(
-            fail_on,
+            effective_fail_on,
             config,
             baseline_path=baseline or config.baseline_path,
         )

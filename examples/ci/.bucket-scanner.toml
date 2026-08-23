@@ -50,3 +50,67 @@ name = "audit-only"
 cloud = "yandex"
 fixture = "examples/demo-vulnerable/fixture.toml"
 fail_on = "critical"
+
+# --- Live prod templates (copy to repo-root .bucket-scanner.toml) ---
+# Scope: set folder_id / folder_ids in profile OR pass --folder-id / cloud env secrets.
+
+[[profiles]]
+name = "yc-prod"
+cloud = "yandex"
+probe = true
+fail_on = "high"
+terraform_path = "terraform"
+
+[[profiles]]
+name = "yc-prod-baseline"
+cloud = "yandex"
+fixture = "examples/demo-vulnerable/fixture.toml"
+fail_on = "new"
+baseline_path = "baselines/yc-prod.json"
+
+[[profiles]]
+name = "aws-prod"
+cloud = "aws"
+aws_region = "eu-west-1"
+fail_on = "high"
+terraform_path = "terraform"
+
+[[profiles]]
+name = "aws-prod-baseline"
+cloud = "aws"
+fixture = "examples/demo-vulnerable/fixture-aws.toml"
+fail_on = "new"
+baseline_path = "baselines/aws-prod.json"
+
+[[profiles]]
+name = "azure-prod"
+cloud = "azure"
+probe = true
+fail_on = "high"
+terraform_path = "terraform"
+
+[[profiles]]
+name = "azure-prod-baseline"
+cloud = "azure"
+fixture = "examples/demo-vulnerable/fixture-azure.toml"
+fail_on = "new"
+baseline_path = "baselines/azure-prod.json"
+
+[[profiles]]
+name = "gcs-prod"
+cloud = "gcs"
+probe = true
+fail_on = "high"
+terraform_path = "terraform"
+
+[[profiles]]
+name = "gcs-prod-baseline"
+cloud = "gcs"
+fixture = "examples/demo-vulnerable/fixture-gcs.toml"
+fail_on = "new"
+baseline_path = "baselines/gcs-prod.json"
+
+[serve]
+addr = "127.0.0.1:9090"
+interval_seconds = 300
+profile = "yc-fixture"

@@ -1,0 +1,70 @@
+# Baseline delta gate — fail only on NEW findings vs committed baseline
+#
+# Copy to .github/workflows/ and set secrets for live profiles.
+# Offline demo uses yc-prod-baseline profile (fixture + baselines/yc-prod.json).
+
+name: Bucket Scanner baseline gate
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - "infra/**"
+      - ".bucket-scanner.toml"
+      - "baselines/**"
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Profile with baseline_path (e.g. yc-prod-baseline)
+        default: yc-prod-baseline
+        type: string
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  baseline-gate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile:
+          - yc-prod-baseline
+          - aws-prod-baseline
+          - azure-prod-baseline
+          - gcs-prod-baseline
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: FounderB/BucketScanner/action@v1.1.0
+        with:
+          profile: ${{ matrix.profile }}
+          config-path: examples/ci/.bucket-scanner.toml
+          fail-on: new
+          sarif-path: bucket-scanner-${{ matrix.profile }}.sarif
+          json-path: report-${{ matrix.profile }}.json
+        continue-on-error: true
+      - name: Verify baseline delta artifacts
+        run: test -s report-${{ matrix.profile }}.json
+
+  refresh-baseline:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install bucket-scanner==1.1.0
+      - name: Regenerate baseline (manual)
+        run: |
+          bucket-scanner scan \
+            --profile "${{ github.event.inputs.profile }}" \
+            --config examples/ci/.bucket-scanner.toml \
+            --write-baseline "baselines/${{ github.event.inputs.profile }}.json" \
+            -q || test $? -eq 1
+        env:
+          YC_TOKEN: ${{ secrets.YC_TOKEN }}

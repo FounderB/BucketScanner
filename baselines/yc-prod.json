@@ -1,0 +1,172 @@
+{
+  "tool": "bucket-scanner",
+  "report_schema": "1.0",
+  "version": "1.1.0",
+  "cloud": "yandex",
+  "folder_id": "b1gFAKEFOLDER00000001",
+  "scope_ids": [
+    "b1gFAKEFOLDER00000001"
+  ],
+  "scanned_at": "2026-08-23T12:19:59.713577Z",
+  "probe_enabled": false,
+  "buckets": [
+    {
+      "name": "prod-backups-open",
+      "cloud": "yandex",
+      "folder_id": "b1gFAKEFOLDER00000001",
+      "region": null,
+      "acl": "public-read",
+      "policy": null,
+      "encryption_enabled": false,
+      "logging_enabled": false,
+      "versioning_enabled": false,
+      "lifecycle_rules": [],
+      "anonymous_listable": null,
+      "anonymous_readable": null,
+      "metadata_known": true,
+      "block_public_access": null,
+      "account_public_access_block": null,
+      "tags": {}
+    },
+    {
+      "name": "internal-logs-secure",
+      "cloud": "yandex",
+      "folder_id": "b1gFAKEFOLDER00000001",
+      "region": null,
+      "acl": "private",
+      "policy": null,
+      "encryption_enabled": true,
+      "logging_enabled": true,
+      "versioning_enabled": true,
+      "lifecycle_rules": [],
+      "anonymous_listable": null,
+      "anonymous_readable": null,
+      "metadata_known": true,
+      "block_public_access": null,
+      "account_public_access_block": null,
+      "tags": {}
+    }
+  ],
+  "findings": [
+    {
+      "rule_id": "acl/public-read",
+      "title": "Bucket ACL allows anonymous access",
+      "severity": "critical",
+      "message": "Bucket 'prod-backups-open' ACL is 'public-read'.",
+      "bucket": "prod-backups-open",
+      "resource": null,
+      "evidence": {
+        "acl": "public-read"
+      },
+      "remediation": "Set bucket ACL to private and use signed URLs or IAM policies."
+    },
+    {
+      "rule_id": "encryption/disabled",
+      "title": "Default encryption disabled",
+      "severity": "high",
+      "message": "Bucket 'prod-backups-open' has no default server-side encryption.",
+      "bucket": "prod-backups-open",
+      "resource": null,
+      "evidence": {
+        "encryption_enabled": false
+      },
+      "remediation": "Enable default server-side encryption (SSE-S3 or SSE-KMS)."
+    },
+    {
+      "rule_id": "logging/disabled",
+      "title": "Access logging disabled",
+      "severity": "medium",
+      "message": "Bucket 'prod-backups-open' does not ship access logs.",
+      "bucket": "prod-backups-open",
+      "resource": null,
+      "evidence": {
+        "logging_enabled": false
+      },
+      "remediation": "Enable access logging to a dedicated audit bucket."
+    },
+    {
+      "rule_id": "versioning/disabled",
+      "title": "Object versioning disabled",
+      "severity": "medium",
+      "message": "Bucket 'prod-backups-open' has versioning disabled.",
+      "bucket": "prod-backups-open",
+      "resource": null,
+      "evidence": {
+        "versioning_enabled": false
+      },
+      "remediation": "Enable versioning on production and backup buckets."
+    },
+    {
+      "rule_id": "tags/missing-env",
+      "title": "Production-like bucket missing environment tag",
+      "severity": "low",
+      "message": "Bucket 'prod-backups-open' looks production-like but has no environment/env tag.",
+      "bucket": "prod-backups-open",
+      "resource": null,
+      "evidence": {
+        "tags": {}
+      },
+      "remediation": "Tag buckets with environment, owner, and data classification."
+    },
+    {
+      "rule_id": "iam/stale-static-key",
+      "title": "Stale service account static key",
+      "severity": "high",
+      "message": "Service account key for ajeFAKESERVICEACCOUNT01 is 412 days old (policy threshold: 90 days).",
+      "bucket": null,
+      "resource": "ajeFAKESERVICEACCOUNT01",
+      "evidence": {
+        "age_days": 412,
+        "key_id": null
+      },
+      "remediation": "Rotate static keys regularly and prefer short-lived IAM tokens."
+    },
+    {
+      "rule_id": "iam/over-privileged-sa",
+      "title": "Over-privileged storage principal",
+      "severity": "high",
+      "message": "Service account ajeFAKESERVICEACCOUNT01 has broad storage.admin access.",
+      "bucket": null,
+      "resource": "ajeFAKESERVICEACCOUNT01",
+      "evidence": {
+        "roles": [
+          "storage.admin"
+        ]
+      },
+      "remediation": "Grant storage.viewer/editor scoped to required buckets only."
+    }
+  ],
+  "chains": [
+    {
+      "chain_id": "chain/silent-exfil",
+      "title": "Silent exfil path",
+      "severity": "critical",
+      "message": "Bucket 'prod-backups-open' is exposed while logging and versioning are off — exfiltration may go unnoticed and objects cannot be rolled back.",
+      "rule_ids": [
+        "acl/public-read",
+        "logging/disabled",
+        "versioning/disabled"
+      ],
+      "buckets": [
+        "prod-backups-open"
+      ]
+    }
+  ],
+  "new_findings": [],
+  "new_chains": [],
+  "baseline_path": null,
+  "summary": {
+    "total": 7,
+    "critical": 1,
+    "high": 3,
+    "medium": 2,
+    "low": 1,
+    "info": 0,
+    "chains": 1,
+    "score": 67,
+    "buckets_scanned": 2,
+    "suppressed": 0,
+    "new": 0
+  },
+  "method": "fixture"
+}
