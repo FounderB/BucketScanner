@@ -17,6 +17,8 @@ Multi-cloud Object Storage security scanner: metadata APIs, optional anonymous p
 |--------|------|
 | `bucket_scanner.yc` | Yandex Cloud management + S3 API |
 | `bucket_scanner.aws` | AWS S3 + IAM helpers |
+| `bucket_scanner.azure` | Azure subscription inventory |
+| `bucket_scanner.gcs` | GCS project inventory |
 | `bucket_scanner.checks` | Detectors (ACL, policy, encryption, cloud-specific BPA) |
 | `bucket_scanner.gate` | Suppressions, baseline fingerprints, delta |
 | `bucket_scanner.chains` | Misconfig graph composer |
@@ -32,11 +34,12 @@ Multi-cloud Object Storage security scanner: metadata APIs, optional anonymous p
 |-------|-----------|---------|-----------------|
 | Yandex Cloud | Yes | Yes | `yandex_storage_bucket` |
 | AWS S3 | Yes | Yes | `aws_s3_*` + BPA |
-| Azure Blob | Planned | Yes | Planned |
-| GCS | Planned | Planned | Planned |
+| Azure Blob | Yes (`[azure]`) | Yes | Planned |
+| GCS | Yes (`[gcs]`) | Yes | Planned |
 
 ## Credential model
 
 - **YC**: `YC_TOKEN` or SA key file; static keys via `YC_ACCESS_KEY_ID` only (not AWS env aliases)
 - **AWS**: env keys, session token, or `AWS_PROFILE` / OIDC on GitHub Actions
-- **Azure**: fixture-only until live backend ships
+- **Azure**: `DefaultAzureCredential`, `AZURE_SUBSCRIPTION_ID` or `--folder-id`
+- **GCS**: Application Default Credentials, `GCP_PROJECT` or `--folder-id`

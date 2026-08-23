@@ -7,7 +7,7 @@ Bucket Scanner is published as [`bucket-scanner`](https://pypi.org/project/bucke
 ```bash
 pip install bucket-scanner
 pip install "bucket-scanner[gcs]"
-pip install "bucket-scanner==0.15.0"
+pip install "bucket-scanner==1.0.0"
 ```
 
 ## Maintainer release
@@ -49,9 +49,9 @@ bucket-scanner --help
 After publish, external workflows can use:
 
 ```yaml
-- uses: FounderB/BucketScanner/action@v0.12.0
+- uses: FounderB/BucketScanner/action@v1.0.0
   with:
-    version: "0.12.0"
+    version: "1.0.0"
     profile: yc-prod
 ```
 

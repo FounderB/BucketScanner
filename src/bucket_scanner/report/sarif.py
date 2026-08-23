@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from bucket_scanner.compliance import sarif_rule_properties
 from bucket_scanner.models import ScanReport, Severity
 
 SARIF_SEVERITY = {
@@ -32,45 +33,51 @@ def render_sarif(report: ScanReport) -> dict:
     results = []
 
     for finding in report.findings:
+        rule_props = sarif_rule_properties(finding.rule_id)
         rules[finding.rule_id] = {
             "id": finding.rule_id,
             "name": finding.rule_id,
             "shortDescription": {"text": finding.title},
             "fullDescription": {"text": finding.message},
             "defaultConfiguration": {"level": SARIF_SEVERITY[finding.severity]},
+            "properties": rule_props,
         }
-        results.append(
-            {
-                "ruleId": finding.rule_id,
-                "level": SARIF_SEVERITY[finding.severity],
-                "message": {"text": finding.message},
-                "locations": [
-                    {
-                        "physicalLocation": {
-                            "artifactLocation": {
-                                "uri": _artifact_uri(report, finding.bucket)
-                            }
+        result: dict = {
+            "ruleId": finding.rule_id,
+            "level": SARIF_SEVERITY[finding.severity],
+            "message": {"text": finding.message},
+            "locations": [
+                {
+                    "physicalLocation": {
+                        "artifactLocation": {
+                            "uri": _artifact_uri(report, finding.bucket)
                         }
                     }
-                ],
-            }
-        )
+                }
+            ],
+        }
+        if rule_props.get("tags"):
+            result["properties"] = {"tags": rule_props["tags"]}
+        results.append(result)
 
     for chain in report.chains:
+        rule_props = sarif_rule_properties(chain.chain_id)
         rules[chain.chain_id] = {
             "id": chain.chain_id,
             "name": chain.chain_id,
             "shortDescription": {"text": chain.title},
             "fullDescription": {"text": chain.message},
             "defaultConfiguration": {"level": SARIF_SEVERITY[chain.severity]},
+            "properties": rule_props,
         }
-        results.append(
-            {
-                "ruleId": chain.chain_id,
-                "level": SARIF_SEVERITY[chain.severity],
-                "message": {"text": chain.message},
-            }
-        )
+        chain_result: dict = {
+            "ruleId": chain.chain_id,
+            "level": SARIF_SEVERITY[chain.severity],
+            "message": {"text": chain.message},
+        }
+        if rule_props.get("tags"):
+            chain_result["properties"] = {"tags": rule_props["tags"]}
+        results.append(chain_result)
 
     return {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",

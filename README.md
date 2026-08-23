@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/AWS-S3-FF9900?style=flat-square" alt="AWS S3"/>
   <img src="https://img.shields.io/badge/SARIF-2.1.0-2ee6a6?style=flat-square" alt="SARIF 2.1.0"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-5eead4?style=flat-square" alt="MIT"/></a>
-  <img src="https://img.shields.io/badge/scan-metadata%20default-darkgrey?style=flat-square" alt="Metadata default"/>
+  <img src="https://img.shields.io/badge/stable-v1.0.0-2ee6a6?style=flat-square" alt="v1.0"/>
 </p>
 
 <p align="center">
@@ -68,6 +68,7 @@ Part of the **FounderB security stack**: [Tracefuse](https://github.com/FounderB
 
 ```bash
 pip install bucket-scanner
+# pin: pip install bucket-scanner==1.0.0
 bucket-scanner --help
 ```
 
@@ -82,7 +83,7 @@ make hooks   # install local git author guard
 ```
 
 See [docs/PYPI.md](docs/PYPI.md) for version pins and maintainer publishing.  
-**Golden demo:** [docs/GOLDEN_DEMO.md](docs/GOLDEN_DEMO.md)
+**Golden demo:** [docs/GOLDEN_DEMO.md](docs/GOLDEN_DEMO.md) · **Compliance tags:** [docs/COMPLIANCE.md](docs/COMPLIANCE.md)
 
 **Requirements:** Python **3.11+**, Yandex Cloud credentials (default) or AWS credentials (`--cloud aws`). See [docs/AWS.md](docs/AWS.md).
 
@@ -343,7 +344,8 @@ See [SECURITY.md](SECURITY.md) and [docs/AUDIT.md](docs/AUDIT.md).
 - [x] GCS backend (fixture-first)
 - [x] GCS live scan (`pip install bucket-scanner[gcs]`)
 - [x] Golden demo walkthrough ([docs/GOLDEN_DEMO.md](docs/GOLDEN_DEMO.md))
-- [ ] v1.0 tag + demo video
+- [x] SARIF compliance tags ([docs/COMPLIANCE.md](docs/COMPLIANCE.md))
+- [x] **v1.0 stable** — four-cloud live scan + PyPI + CI gates
 
 ---
 
