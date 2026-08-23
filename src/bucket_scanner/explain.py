@@ -96,7 +96,10 @@ RULES: dict[str, dict[str, str]] = {
     "chain/leaked-credentials-exposure": {
         "title": "Leaked credentials + public buckets",
         "why": "Repo secrets plus public storage = immediate compromise path.",
-        "fix": "Rotate all YC keys, remove secrets from git history, close public access.",
+        "fix": (
+            "Rotate exposed cloud credentials, remove secrets from git history, "
+            "close public access."
+        ),
     },
     "secrets/yc-env-var": {
         "title": "YC credential in repo",

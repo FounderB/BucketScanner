@@ -245,9 +245,36 @@ def test_resolve_account_id(mock_sts):
 def test_config_loads_cloud_aws(tmp_path: Path):
     config_path = tmp_path / ".bucket-scanner.toml"
     config_path.write_text(
-        '[scan]\ncloud = "aws"\naws_region = "eu-central-1"\n',
+        '[scan]\ncloud = "aws"\naws_region = "eu-central-1"\n'
+        'terraform_path = "terraform-aws"\n',
         encoding="utf-8",
     )
     cfg = load_config(config_path)
     assert cfg.scan.cloud == CloudProvider.AWS
     assert cfg.scan.aws_region == "eu-central-1"
+    assert cfg.scan.terraform_path == Path("terraform-aws")
+
+
+@patch("bucket_scanner.aws.iam.boto3.Session")
+def test_iam_over_privileged_policy(mock_session):
+    from bucket_scanner.aws.iam import list_iam_access_keys
+    from bucket_scanner.checks import check_service_accounts
+
+    iam = MagicMock()
+    mock_session.return_value.client.return_value = iam
+    iam.get_paginator.return_value.paginate.return_value = [
+        {"Users": [{"UserName": "deploy-bot"}]}
+    ]
+    iam.list_attached_user_policies.return_value = {
+        "AttachedPolicies": [{"PolicyName": "AmazonS3FullAccess"}]
+    }
+    iam.list_user_policies.return_value = {"PolicyNames": []}
+    iam.list_access_keys.return_value = {
+        "AccessKeyMetadata": [{"AccessKeyId": "AKIA123", "CreateDate": None}]
+    }
+    credentials = MagicMock(profile=None, region="us-east-1")
+    credentials.access_key_id = "x"
+    credentials.secret_access_key = "y"
+    keys = list_iam_access_keys(credentials)
+    rules = {item.rule_id for item in check_service_accounts(keys)}
+    assert "iam/over-privileged-sa" in rules

@@ -10,6 +10,12 @@ from bucket_scanner.models import BucketSnapshot, Finding, ServiceAccountKeySnap
 
 PUBLIC_ACL_VALUES = {"public-read", "public-read-write", "public"}
 PROD_LIKE = re.compile(r"(prod|backup|archive|payment|pii)", re.IGNORECASE)
+RISKY_POLICY_NAMES = {
+    "AdministratorAccess",
+    "AmazonS3FullAccess",
+    "PowerUserAccess",
+    "IAMFullAccess",
+}
 
 
 def check_bucket(bucket: BucketSnapshot) -> list[Finding]:
@@ -66,19 +72,40 @@ def check_service_accounts(
                     remediation="Rotate static keys regularly and prefer short-lived IAM tokens.",
                 )
             )
-        if any(role.endswith("storage.admin") or role == "storage.admin" for role in key.roles):
+        if _is_over_privileged(key.roles):
+            is_storage_admin = any(
+                role.endswith("storage.admin") or role == "storage.admin" for role in key.roles
+            )
+            message = (
+                f"Service account {key.sa_id} has broad storage.admin access."
+                if is_storage_admin
+                else f"IAM principal {key.sa_id} has risky S3 or admin policies attached."
+            )
             findings.append(
                 Finding(
                     rule_id="iam/over-privileged-sa",
-                    title="Over-privileged storage service account",
+                    title="Over-privileged storage principal",
                     severity=Severity.HIGH,
-                    message=f"Service account {key.sa_id} has broad storage.admin access.",
+                    message=message,
                     resource=key.sa_id,
                     evidence={"roles": key.roles},
                     remediation="Grant storage.viewer/editor scoped to required buckets only.",
                 )
             )
     return findings
+
+
+def _is_over_privileged(roles: list[str]) -> bool:
+    for role in roles:
+        if role.endswith("storage.admin") or role == "storage.admin":
+            return True
+        if role in RISKY_POLICY_NAMES:
+            return True
+        if role.startswith("inline:") and any(
+            marker in role.lower() for marker in ("admin", "s3full", "fullaccess")
+        ):
+            return True
+    return False
 
 
 def _check_acl(bucket: BucketSnapshot) -> list[Finding]:

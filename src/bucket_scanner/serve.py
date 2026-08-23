@@ -49,6 +49,7 @@ def run_metrics_server(
                 config=config,
                 repo_path=config.repo_path,
                 tracefuse_report=config.tracefuse_report,
+                terraform_path=config.terraform_path,
             )
             cache.update(report)
         except ScanError as exc:

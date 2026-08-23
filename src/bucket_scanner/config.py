@@ -63,7 +63,8 @@ key_age_days = 90
 [scan.ignore_buckets]
 names = ["public-assets-cdn"]
 
-# repo scanning (Tracefuse-style YC secret detection)
+# terraform_path = "terraform/"
+# repo scanning (Tracefuse-style cloud secret detection)
 # [repo]
 # path = "."
 # tracefuse_report = "tracefuse-report.json"
@@ -105,6 +106,7 @@ def load_config(path: Path | None = None) -> AppConfig:
 
     repo_path = repo_data.get("path")
     tracefuse_report = repo_data.get("tracefuse_report")
+    terraform_path = scan_data.get("terraform_path")
 
     return AppConfig(
         scan=ScanConfig(
@@ -118,6 +120,7 @@ def load_config(path: Path | None = None) -> AppConfig:
             ignore_buckets=set(ignore),
             severity_overrides=overrides,
             key_age_days=int(scan_data.get("key_age_days", 90)),
+            terraform_path=Path(terraform_path) if terraform_path else None,
             repo_path=Path(repo_path) if repo_path else None,
             tracefuse_report=Path(tracefuse_report) if tracefuse_report else None,
         ),

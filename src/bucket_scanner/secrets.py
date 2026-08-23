@@ -67,15 +67,26 @@ PATTERNS: list[tuple[str, re.Pattern[str], Severity, str]] = [
     ),
 ]
 
+YC_PATTERNS = {
+    "secrets/yc-env-var",
+    "secrets/yc-static-key",
+    "secrets/yc-sa-key-json",
+    "secrets/aws-compat-key-in-yc-context",
+}
+AWS_PATTERNS = {
+    "secrets/aws-env-var",
+    "secrets/aws-access-key-id",
+}
+
 
 def scan_repo(
     repo_path: Path,
     *,
     cloud: CloudProvider = CloudProvider.YANDEX,
 ) -> list[Finding]:
-    _ = cloud
     if not repo_path.exists():
         return []
+    allowed = _patterns_for_cloud(cloud)
     findings: list[Finding] = []
     for file_path in _iter_files(repo_path):
         try:
@@ -86,6 +97,8 @@ def scan_repo(
             continue
         rel = str(file_path.relative_to(repo_path))
         for rule_id, pattern, severity, title in PATTERNS:
+            if rule_id not in allowed:
+                continue
             match = pattern.search(text)
             if not match:
                 continue
@@ -107,6 +120,12 @@ def scan_repo(
             )
             break
     return findings
+
+
+def _patterns_for_cloud(cloud: CloudProvider) -> set[str]:
+    if cloud == CloudProvider.AWS:
+        return AWS_PATTERNS
+    return YC_PATTERNS
 
 
 def _iter_files(root: Path):

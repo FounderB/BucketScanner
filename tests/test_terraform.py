@@ -9,7 +9,9 @@ from bucket_scanner.fixture import load_fixture
 from bucket_scanner.terraform import parse_terraform_file
 
 TF = Path("examples/demo-vulnerable/terraform/main.tf")
+TF_AWS = Path("examples/demo-vulnerable/terraform-aws/main.tf")
 FIXTURE = Path("examples/demo-vulnerable/fixture.toml")
+AWS_FIXTURE = Path("examples/demo-vulnerable/fixture-aws.toml")
 
 
 def test_parse_terraform_file():
@@ -39,3 +41,18 @@ def test_diff_shadow_bucket_when_live_extra():
     findings = diff_terraform(tf.parent, buckets)
     rules = {item.rule_id for item in findings}
     assert "iac/shadow-bucket" in rules
+
+
+def test_parse_aws_terraform_acl_refs():
+    intents = parse_terraform_file(TF_AWS)
+    by_bucket = {item.bucket: item for item in intents}
+    assert by_bucket["prod-backups-open"].acl == "private"
+    assert by_bucket["internal-logs-secure"].acl == "private"
+
+
+def test_diff_aws_acl_drift():
+    _, buckets, _ = load_fixture(AWS_FIXTURE)
+    findings = diff_terraform(TF_AWS.parent, buckets)
+    rules = {item.rule_id for item in findings}
+    assert "iac/acl-drift" in rules
+    assert "iac/ghost-bucket" in rules

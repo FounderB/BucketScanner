@@ -8,7 +8,18 @@ from typing import Any
 
 from bucket_scanner.models import Finding, Severity
 
-YC_MARKERS = ("yc_", "yandex", "ycaJ", "storage.yandexcloud", "authorized_key")
+CLOUD_MARKERS = (
+    "yc_",
+    "yandex",
+    "ycaj",
+    "storage.yandexcloud",
+    "authorized_key",
+    "akia",
+    "aws_",
+    "amazon",
+    "secretsmanager",
+    "s3.amazonaws.com",
+)
 
 
 def load_tracefuse_report(path: Path) -> list[Finding]:
@@ -16,12 +27,12 @@ def load_tracefuse_report(path: Path) -> list[Finding]:
     raw_findings = data.get("findings", data if isinstance(data, list) else [])
     findings: list[Finding] = []
     for item in raw_findings:
-        if not _is_yc_related(item):
+        if not _is_cloud_related(item):
             continue
         findings.append(
             Finding(
                 rule_id=f"tracefuse/{item.get('rule_id', 'finding')}",
-                title=item.get("title", "Tracefuse YC-related finding"),
+                title=item.get("title", "Tracefuse cloud-related finding"),
                 severity=_map_severity(item.get("severity", "high")),
                 message=item.get("message", "Imported from Tracefuse report."),
                 resource=item.get("resource") or item.get("file"),
@@ -33,9 +44,9 @@ def load_tracefuse_report(path: Path) -> list[Finding]:
     return findings
 
 
-def _is_yc_related(item: dict[str, Any]) -> bool:
+def _is_cloud_related(item: dict[str, Any]) -> bool:
     blob = json.dumps(item, ensure_ascii=False).lower()
-    return any(marker.lower() in blob for marker in YC_MARKERS)
+    return any(marker in blob for marker in CLOUD_MARKERS)
 
 
 def _map_severity(value: str) -> Severity:

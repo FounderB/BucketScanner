@@ -16,6 +16,13 @@ SARIF_SEVERITY = {
 }
 
 
+def _artifact_uri(report: ScanReport, bucket: str | None) -> str:
+    target = bucket or report.folder_id
+    if report.cloud == "aws":
+        return f"arn:aws:s3:::{target}"
+    return f"yc://object-storage/{target}"
+
+
 def render_sarif(report: ScanReport) -> dict:
     rules = {}
     results = []
@@ -37,7 +44,7 @@ def render_sarif(report: ScanReport) -> dict:
                     {
                         "physicalLocation": {
                             "artifactLocation": {
-                                "uri": f"yc://object-storage/{finding.bucket or report.folder_id}"
+                                "uri": _artifact_uri(report, finding.bucket)
                             }
                         }
                     }

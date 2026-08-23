@@ -67,6 +67,8 @@ jobs:
             --sarif /tmp/report.sarif --fail-on high -q
           bucket-scanner scan --cloud aws --fixture examples/demo-vulnerable/fixture-aws.toml \
             --fail-on high -q
+          bucket-scanner diff examples/demo-vulnerable/terraform-aws \
+            --cloud aws --fixture examples/demo-vulnerable/fixture-aws.toml --json -q
       - name: Full stack demo
         run: |
           bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml \
