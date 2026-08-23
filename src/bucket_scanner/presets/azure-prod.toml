@@ -1,0 +1,14 @@
+# Azure Blob production — set folder_ids / AZURE_SUBSCRIPTION_ID
+# Docs: docs/OIDC.md
+
+[scan]
+fail_on = "high"
+probe = true
+
+[[profiles]]
+name = "azure-prod"
+cloud = "azure"
+folder_ids = ["00000000-0000-0000-0000-000000000001"]
+probe = true
+fail_on = "high"
+terraform_path = "terraform"

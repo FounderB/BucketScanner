@@ -1,0 +1,14 @@
+# AWS S3 production — set AWS_REGION / credentials via env or OIDC
+# Docs: docs/OIDC.md
+
+[scan]
+fail_on = "high"
+aws_region = "eu-west-1"
+# baseline_path = "baselines/aws-prod.json"
+
+[[profiles]]
+name = "aws-prod"
+cloud = "aws"
+aws_region = "eu-west-1"
+fail_on = "high"
+terraform_path = "terraform"

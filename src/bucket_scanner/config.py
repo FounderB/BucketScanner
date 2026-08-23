@@ -5,11 +5,13 @@ from __future__ import annotations
 import tomllib
 from dataclasses import dataclass, field
 from datetime import date
+from importlib import resources
 from pathlib import Path
 
 from bucket_scanner.cloud import CloudProvider
 from bucket_scanner.gate import Suppression
 from bucket_scanner.models import Severity
+from bucket_scanner.presets import PRESET_NAMES
 
 
 @dataclass
@@ -291,3 +293,13 @@ def write_default_config(path: Path, *, force: bool = False) -> None:
     if path.exists() and not force:
         raise FileExistsError(f"Config already exists: {path}")
     path.write_text(DEFAULT_CONFIG, encoding="utf-8")
+
+
+def write_preset_config(path: Path, preset: str, *, force: bool = False) -> None:
+    if preset not in PRESET_NAMES:
+        choices = ", ".join(PRESET_NAMES)
+        raise ValueError(f"Unknown preset {preset!r}. Choose: {choices}")
+    if path.exists() and not force:
+        raise FileExistsError(f"Config already exists: {path}")
+    resource = resources.files("bucket_scanner.presets").joinpath(f"{preset}.toml")
+    path.write_text(resource.read_text(encoding="utf-8"), encoding="utf-8")
