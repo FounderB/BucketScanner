@@ -296,7 +296,7 @@ See [SECURITY.md](SECURITY.md).
 - [x] Scheduled drift alerts (Telegram / webhook)
 - [x] AWS S3 backend (optional second cloud)
 - [x] Multi-region AWS inventory (per-bucket region resolution)
-- [ ] Scheduled scan profiles in config
+- [x] Scheduled scan profiles in config
 
 ---
 
