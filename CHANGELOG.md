@@ -2,6 +2,19 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [1.0.0] - 2026-08-23
+
+### Added
+
+- **v1.0 stable release** — four-cloud live scan (YC, AWS, Azure, GCS)
+- SARIF **compliance tags** — CIS / NIST / SOC2 mappings in rule properties
+- Docs: [COMPLIANCE.md](docs/COMPLIANCE.md), [GOLDEN_DEMO.md](docs/GOLDEN_DEMO.md)
+
+### Changed
+
+- All docs and examples pin `@v1.0.0` / `bucket-scanner==1.0.0`
+- PyPI classifier: Production/Stable
+
 ## [0.15.0] - 2026-08-23
 
 ### Added
