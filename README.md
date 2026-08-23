@@ -63,7 +63,14 @@ Part of the **FounderB security stack**: [Tracefuse](https://github.com/FounderB
 
 ## Install
 
-**From source** (recommended today):
+**From PyPI** (recommended):
+
+```bash
+pip install bucket-scanner
+bucket-scanner --help
+```
+
+**From source** (development):
 
 ```bash
 git clone https://github.com/FounderB/BucketScanner.git
@@ -72,6 +79,8 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 make hooks   # install local git author guard
 ```
+
+See [docs/PYPI.md](docs/PYPI.md) for version pins and maintainer publishing.
 
 **Requirements:** Python **3.11+**, Yandex Cloud credentials (default) or AWS credentials (`--cloud aws`). See [docs/AWS.md](docs/AWS.md).
 
@@ -311,7 +320,7 @@ See [SECURITY.md](SECURITY.md) and [docs/AUDIT.md](docs/AUDIT.md).
 - [x] CI/CD profile workflows (Action + scheduled matrix)
 - [x] Baseline/delta + suppressions for production CI gates
 - [x] Security hardening + audit docs (v0.11)
-- [ ] PyPI publish (`pip install bucket-scanner`)
+- [x] PyPI package (`pip install bucket-scanner`)
 - [ ] Azure Blob live scan
 - [ ] GCS backend
 

@@ -1,6 +1,10 @@
 name: "Scan with Bucket Scanner"
 description: "Run Bucket Scanner against Yandex Cloud or AWS S3 using CLI flags or named scan profiles"
 inputs:
+  version:
+    description: "Install bucket-scanner from PyPI at this version (e.g. 0.12.0)"
+    required: false
+    default: ""
   cloud:
     description: "Cloud backend when not using profile: yandex or aws"
     required: false
@@ -51,7 +55,14 @@ runs:
   steps:
     - name: Install Bucket Scanner
       shell: bash
-      run: pip install .
+      run: |
+        if [ -n "${{ inputs.version }}" ]; then
+          pip install "bucket-scanner==${{ inputs.version }}"
+        elif [ -f pyproject.toml ] && grep -q 'name = "bucket-scanner"' pyproject.toml; then
+          pip install .
+        else
+          pip install bucket-scanner
+        fi
     - name: Scan
       shell: bash
       env:

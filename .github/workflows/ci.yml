@@ -49,6 +49,24 @@ jobs:
           pip install --upgrade pip
           pip-audit
 
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build and install wheel
+        run: |
+          pip install build
+          python -m build
+          pip install dist/bucket_scanner-*.whl
+          bucket-scanner --version
+      - name: Smoke scan from installed wheel
+        run: |
+          bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml \
+            --fail-on high -q || test $? -eq 1
+
   demo:
     runs-on: ubuntu-latest
     steps:

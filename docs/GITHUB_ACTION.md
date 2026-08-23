@@ -1,6 +1,8 @@
 # GitHub Action
 
-Composite action: `FounderB/BucketScanner/action@v0.8.0` (or `./action` from a checkout).
+Composite action: `FounderB/BucketScanner/action@v0.12.0` (or `./action` from a checkout).
+
+Install from **PyPI** by pinning `version`, or from the checked-out repo when `version` is omitted and `pyproject.toml` is present. See [PYPI.md](PYPI.md).
 
 ## Quick start — named profile (recommended)
 
@@ -16,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: FounderB/BucketScanner/action@v0.8.0
+      - uses: FounderB/BucketScanner/action@v0.12.0
         with:
           profile: yc-prod
           config-path: .bucket-scanner.toml
@@ -33,7 +35,7 @@ Store **`YC_TOKEN`** (and optionally **`YC_FOLDER_ID`**) as repository secrets. 
 This repository ships fixture profiles under `examples/ci/`:
 
 ```yaml
-- uses: FounderB/BucketScanner/action@v0.8.0
+- uses: FounderB/BucketScanner/action@v0.12.0
   with:
     profile: yc-fixture
     config-path: examples/ci/.bucket-scanner.toml
@@ -54,6 +56,7 @@ Copy-ready templates:
 
 | Input | Default | Description |
 |-------|---------|-------------|
+| `version` | — | Install `bucket-scanner==<version>` from PyPI (e.g. `0.12.0`) |
 | `profile` | — | Named `[[profiles]]` entry from config |
 | `config-path` | `.bucket-scanner.toml` | TOML path (skipped if missing) |
 | `cloud` | `yandex` | Used when `profile` is empty |
@@ -85,7 +88,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: FounderB/BucketScanner/action@v0.8.0
+      - uses: FounderB/BucketScanner/action@v0.12.0
         with:
           profile: ${{ github.event.inputs.profile || 'yc-prod' }}
           fail-on: high
@@ -102,7 +105,7 @@ strategy:
   matrix:
     profile: [yc-prod, aws-prod, yc-backup]
 steps:
-  - uses: FounderB/BucketScanner/action@v0.8.0
+  - uses: FounderB/BucketScanner/action@v0.12.0
     with:
       profile: ${{ matrix.profile }}
       json-path: report-${{ matrix.profile }}.json

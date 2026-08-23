@@ -2,6 +2,16 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [0.12.0] - 2026-08-23
+
+### Added
+
+- **PyPI distribution** — `pip install bucket-scanner`
+- GitHub Actions [publish.yml](.github/workflows/publish.yml) — upload on `v*.*.*` tags
+- CI `package` job — build wheel, install, smoke scan
+- GitHub Action `version` input — install pinned release from PyPI
+- Docs: [PYPI.md](docs/PYPI.md), `make build` / `make check-package`
+
 ## [0.11.0] - 2026-08-23
 
 ### Added
