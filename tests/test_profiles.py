@@ -153,6 +153,59 @@ def test_multi_folder_yandex_scan(mock_snapshot, mock_s3, mock_mgmt, mock_creds)
     assert {bucket.name for bucket in report.buckets} == {"bucket-a", "bucket-b"}
 
 
+@patch("bucket_scanner.scan.collect_gcs_buckets")
+@patch("bucket_scanner.scan.resolve_credentials")
+def test_multi_project_gcs_scan(mock_creds, mock_collect):
+    mock_creds.return_value = MagicMock(folder_id=None)
+    mock_collect.side_effect = lambda _c, project_id, ignore: [
+        BucketSnapshot(
+            name=f"bucket-{project_id}",
+            cloud="gcs",
+            folder_id=project_id,
+            acl="private",
+        )
+    ]
+
+    config = ScanConfig(cloud=CloudProvider.GCS, folder_ids=["proj-a", "proj-b"])
+    report = run_scan(folder_id=None, fixture=None, config=config)
+    assert report.method == "live"
+    assert report.scope_ids == ["proj-a", "proj-b"]
+    assert report.summary.buckets_scanned == 2
+
+
+@patch("bucket_scanner.scan.collect_azure_containers")
+@patch("bucket_scanner.scan.resolve_credentials")
+def test_multi_subscription_azure_scan(mock_creds, mock_collect):
+    mock_creds.return_value = MagicMock(subscription_id=None)
+    mock_collect.side_effect = lambda _c, subscription_id, ignore: [
+        BucketSnapshot(
+            name=f"container-{subscription_id[:4]}",
+            cloud="azure",
+            folder_id=subscription_id,
+            acl="private",
+        )
+    ]
+
+    config = ScanConfig(
+        cloud=CloudProvider.AZURE,
+        folder_ids=["11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222"],
+    )
+    report = run_scan(folder_id=None, fixture=None, config=config)
+    assert report.method == "live"
+    assert len(report.scope_ids) == 2
+    assert report.summary.buckets_scanned == 2
+
+
+def test_scan_profile_baseline_path():
+    config = ScanConfig()
+    profile = ScanProfile(
+        name="demo",
+        baseline_path=Path("baselines/yc-prod.json"),
+    )
+    profile.apply_to(config)
+    assert config.baseline_path == Path("baselines/yc-prod.json")
+
+
 def test_cli_unknown_profile(tmp_path: Path):
     config_path = tmp_path / ".bucket-scanner.toml"
     config_path.write_text("[scan]\nfolder_id = \"b1gTEST\"\n", encoding="utf-8")

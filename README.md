@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/AWS-S3-FF9900?style=flat-square" alt="AWS S3"/>
   <img src="https://img.shields.io/badge/SARIF-2.1.0-2ee6a6?style=flat-square" alt="SARIF 2.1.0"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-5eead4?style=flat-square" alt="MIT"/></a>
-  <img src="https://img.shields.io/badge/stable-v1.1.0-2ee6a6?style=flat-square" alt="v1.1"/>
+  <img src="https://img.shields.io/badge/stable-v1.2.0-2ee6a6?style=flat-square" alt="v1.2"/>
 </p>
 
 <p align="center">
@@ -79,7 +79,7 @@ Part of the **FounderB security stack**: [Tracefuse](https://github.com/FounderB
 
 ```bash
 pip install bucket-scanner
-# pin: pip install bucket-scanner==1.1.0
+# pin: pip install bucket-scanner==1.2.0
 bucket-scanner --help
 ```
 
@@ -132,7 +132,7 @@ bucket-scanner scan --cloud gcs --fixture examples/demo-vulnerable/fixture-gcs.t
 
 See [docs/GCS.md](docs/GCS.md).
 
-Live Azure inventory is planned; see [docs/AZURE.md](docs/AZURE.md).
+Live Azure scan: `pip install 'bucket-scanner[azure]'` — see [docs/AZURE.md](docs/AZURE.md).
 
 ---
 
@@ -357,6 +357,8 @@ See [SECURITY.md](SECURITY.md) and [docs/AUDIT.md](docs/AUDIT.md).
 - [x] Golden demo walkthrough ([docs/GOLDEN_DEMO.md](docs/GOLDEN_DEMO.md))
 - [x] SARIF compliance tags ([docs/COMPLIANCE.md](docs/COMPLIANCE.md))
 - [x] **v1.0 stable** — four-cloud live scan + PyPI + CI gates
+- [x] **v1.1** — Terraform Azure/GCS drift, compliance export, Tracefuse polish
+- [x] **v1.2 field deployment** — prod profiles, baselines/, OIDC workflows (AWS/Azure/GCS), Grafana VM guide, multi-scope Azure/GCS
 
 ---
 
@@ -367,6 +369,7 @@ Questions, scan profiles, CI recipes — pick a channel:
 | Channel | Link |
 |---------|------|
 | **GitHub Discussions** | [FounderB/BucketScanner/discussions](https://github.com/FounderB/BucketScanner/discussions) |
+| **Habr draft (RU)** | [docs/HABR.md](docs/HABR.md) |
 | **Issues & bugs** | [FounderB/BucketScanner/issues](https://github.com/FounderB/BucketScanner/issues) |
 | **DevSecOps catalog** | [awesome-devsecops](https://github.com/devsecops/awesome-devsecops) · [devsecops.org](https://www.devsecops.org/) |
 | **Yandex Cloud (RU)** | [Сообщество Yandex Cloud](https://yandex.cloud/ru/community) |

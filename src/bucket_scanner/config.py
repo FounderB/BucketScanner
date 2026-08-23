@@ -22,6 +22,7 @@ class ScanConfig:
     aws_scan_iam: bool = True
     aws_resolve_regions: bool = True
     fail_on: Severity = Severity.HIGH
+    fail_on_new: bool = False
     probe: bool = False
     ignore_buckets: set[str] = field(default_factory=set)
     severity_overrides: dict[str, Severity] = field(default_factory=dict)
@@ -45,12 +46,14 @@ class ScanProfile:
     aws_resolve_regions: bool = True
     probe: bool = False
     fail_on: Severity | None = None
+    fail_on_new: bool = False
     key_age_days: int | None = None
     ignore_buckets: set[str] = field(default_factory=set)
     terraform_path: Path | None = None
     repo_path: Path | None = None
     tracefuse_report: Path | None = None
     fixture: Path | None = None
+    baseline_path: Path | None = None
 
     def apply_to(self, config: ScanConfig) -> None:
         config.cloud = self.cloud
@@ -66,6 +69,8 @@ class ScanProfile:
         config.aws_resolve_regions = self.aws_resolve_regions
         if self.probe:
             config.probe = True
+        if self.fail_on_new:
+            config.fail_on_new = True
         if self.fail_on is not None:
             config.fail_on = self.fail_on
         if self.key_age_days is not None:
@@ -78,6 +83,8 @@ class ScanProfile:
             config.repo_path = self.repo_path
         if self.tracefuse_report:
             config.tracefuse_report = self.tracefuse_report
+        if self.baseline_path:
+            config.baseline_path = self.baseline_path
 
 
 @dataclass
@@ -191,6 +198,9 @@ def _parse_profile(item: dict) -> ScanProfile:
     ignore = item.get("ignore_buckets", {}).get("names", item.get("ignore_buckets", []))
     if isinstance(ignore, dict):
         ignore = ignore.get("names", [])
+    fail_on_raw = item.get("fail_on")
+    fail_on_new = fail_on_raw == "new"
+    fail_on = None if fail_on_new else (_parse_severity(fail_on_raw) if fail_on_raw else None)
     return ScanProfile(
         name=item["name"],
         cloud=CloudProvider.parse(item.get("cloud")),
@@ -201,13 +211,15 @@ def _parse_profile(item: dict) -> ScanProfile:
         aws_scan_iam=bool(item.get("aws_scan_iam", True)),
         aws_resolve_regions=bool(item.get("aws_resolve_regions", True)),
         probe=bool(item.get("probe", False)),
-        fail_on=_parse_severity(item["fail_on"]) if item.get("fail_on") else None,
+        fail_on=fail_on,
+        fail_on_new=fail_on_new,
         key_age_days=int(item["key_age_days"]) if item.get("key_age_days") is not None else None,
         ignore_buckets=set(ignore),
         terraform_path=Path(item["terraform_path"]) if item.get("terraform_path") else None,
         repo_path=Path(item["repo_path"]) if item.get("repo_path") else None,
         tracefuse_report=Path(item["tracefuse_report"]) if item.get("tracefuse_report") else None,
         fixture=Path(item["fixture"]) if item.get("fixture") else None,
+        baseline_path=Path(item["baseline_path"]) if item.get("baseline_path") else None,
     )
 
 

@@ -1,0 +1,22 @@
+[Unit]
+Description=Bucket Scanner metrics exporter (serve)
+Documentation=https://github.com/FounderB/BucketScanner/blob/main/docs/GRAFANA.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bucket-scanner
+Group=bucket-scanner
+EnvironmentFile=-/etc/bucket-scanner/env
+ExecStart=/usr/local/bin/bucket-scanner serve --config /etc/bucket-scanner/.bucket-scanner.toml
+Restart=on-failure
+RestartSec=30
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/bucket-scanner
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

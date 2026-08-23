@@ -305,36 +305,74 @@ def run_scan(
         report_cloud = CloudProvider.AWS.value
     elif cloud == CloudProvider.AZURE:
         credentials = resolve_credentials(cloud=CloudProvider.AZURE)
-        subscription_id = folder_id or credentials.subscription_id
-        if not subscription_id:
+        scope_ids = resolve_folder_ids(config, folder_id)
+        if not scope_ids and credentials.subscription_id:
+            scope_ids = [credentials.subscription_id]
+        if not scope_ids:
             raise ScanError(
-                "Provide --folder-id with Azure subscription GUID or set AZURE_SUBSCRIPTION_ID."
+                "Provide --folder-id with Azure subscription GUID, folder_ids in config, "
+                "or set AZURE_SUBSCRIPTION_ID."
             )
-        buckets, sa_keys, scope = _collect_azure_data(
-            credentials,
-            subscription_id=subscription_id,
-            probe=probe,
-            ignore=ignore,
-        )
-        folder = scope
+        all_buckets: list[BucketSnapshot] = []
+        for subscription_id in scope_ids:
+            buckets_part, _, _ = _collect_azure_data(
+                credentials,
+                subscription_id=subscription_id,
+                probe=probe,
+                ignore=ignore,
+            )
+            all_buckets.extend(buckets_part)
+        folder = ",".join(scope_ids)
         method = "live"
         report_cloud = CloudProvider.AZURE.value
+        return _finalize_report(
+            buckets=all_buckets,
+            sa_keys=[],
+            folder=folder,
+            scope_ids=scope_ids,
+            report_cloud=report_cloud,
+            method=method,
+            probe=probe,
+            config=config,
+            terraform_path=tf_path,
+            repo_path=repo,
+            tracefuse_report=tracefuse,
+        )
     elif cloud == CloudProvider.GCS:
         credentials = resolve_credentials(cloud=CloudProvider.GCS)
-        project_id = folder_id or credentials.folder_id
-        if not project_id:
+        scope_ids = resolve_folder_ids(config, folder_id)
+        if not scope_ids and credentials.folder_id:
+            scope_ids = [credentials.folder_id]
+        if not scope_ids:
             raise ScanError(
-                "Provide --folder-id with GCP project ID or set GCP_PROJECT / GOOGLE_CLOUD_PROJECT."
+                "Provide --folder-id with GCP project ID, folder_ids in config, "
+                "or set GCP_PROJECT / GOOGLE_CLOUD_PROJECT."
             )
-        buckets, sa_keys, scope = _collect_gcs_data(
-            credentials,
-            project_id=project_id,
-            probe=probe,
-            ignore=ignore,
-        )
-        folder = scope
+        all_buckets = []
+        for project_id in scope_ids:
+            buckets_part, _, _ = _collect_gcs_data(
+                credentials,
+                project_id=project_id,
+                probe=probe,
+                ignore=ignore,
+            )
+            all_buckets.extend(buckets_part)
+        folder = ",".join(scope_ids)
         method = "live"
         report_cloud = CloudProvider.GCS.value
+        return _finalize_report(
+            buckets=all_buckets,
+            sa_keys=[],
+            folder=folder,
+            scope_ids=scope_ids,
+            report_cloud=report_cloud,
+            method=method,
+            probe=probe,
+            config=config,
+            terraform_path=tf_path,
+            repo_path=repo,
+            tracefuse_report=tracefuse,
+        )
     else:
         folder_ids = resolve_folder_ids(config, folder_id)
         if not folder_ids:

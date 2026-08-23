@@ -27,10 +27,11 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::123456789012:role/bucket-scanner-oidc
           aws-region: eu-west-1
-      - uses: FounderB/BucketScanner/action@v1.0.0
+      - uses: FounderB/BucketScanner/action@v1.1.0
         with:
-          cloud: aws
-          aws-region: eu-west-1
+          profile: aws-prod
+          config-path: .bucket-scanner.toml
           fail-on: new
           baseline-path: baselines/aws-prod.json
           sarif-path: bucket-scanner.sarif
+          compliance-report-path: compliance.json

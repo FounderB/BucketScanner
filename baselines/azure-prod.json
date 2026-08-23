@@ -1,0 +1,210 @@
+{
+  "tool": "bucket-scanner",
+  "report_schema": "1.0",
+  "version": "1.1.0",
+  "cloud": "azure",
+  "folder_id": "sub-FAKE-AZURE-00000001",
+  "scope_ids": [
+    "sub-FAKE-AZURE-00000001"
+  ],
+  "scanned_at": "2026-08-23T12:20:04.966674Z",
+  "probe_enabled": false,
+  "buckets": [
+    {
+      "name": "prod-backups-open",
+      "cloud": "azure",
+      "folder_id": "sub-FAKE-AZURE-00000001",
+      "region": "eastus",
+      "acl": "public-read",
+      "policy": null,
+      "encryption_enabled": false,
+      "logging_enabled": false,
+      "versioning_enabled": false,
+      "lifecycle_rules": [],
+      "anonymous_listable": null,
+      "anonymous_readable": null,
+      "metadata_known": true,
+      "block_public_access": {
+        "public_access": "container",
+        "allow_blob_public_access": true
+      },
+      "account_public_access_block": {
+        "allow_blob_public_access": true
+      },
+      "tags": {
+        "storage_account": "fakeprodstorage"
+      }
+    },
+    {
+      "name": "internal-logs-secure",
+      "cloud": "azure",
+      "folder_id": "sub-FAKE-AZURE-00000001",
+      "region": "eastus",
+      "acl": "private",
+      "policy": null,
+      "encryption_enabled": true,
+      "logging_enabled": true,
+      "versioning_enabled": true,
+      "lifecycle_rules": [],
+      "anonymous_listable": null,
+      "anonymous_readable": null,
+      "metadata_known": true,
+      "block_public_access": {
+        "public_access": "off",
+        "allow_blob_public_access": false
+      },
+      "account_public_access_block": {
+        "allow_blob_public_access": true
+      },
+      "tags": {
+        "storage_account": "fakeprodstorage"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "rule_id": "acl/public-read",
+      "title": "Bucket ACL allows anonymous access",
+      "severity": "critical",
+      "message": "Bucket 'prod-backups-open' ACL is 'public-read'.",
+      "bucket": "prod-backups-open",
+      "resource": null,
+      "evidence": {
+        "acl": "public-read"
+      },
+      "remediation": "Set bucket ACL to private and use signed URLs or IAM policies."
+    },
+    {
+      "rule_id": "encryption/disabled",
+      "title": "Default encryption disabled",
+      "severity": "high",
+      "message": "Bucket 'prod-backups-open' has no default server-side encryption.",
+      "bucket": "prod-backups-open",
+      "resource": null,
+      "evidence": {
+        "encryption_enabled": false
+      },
+      "remediation": "Enable default server-side encryption (SSE-S3 or SSE-KMS)."
+    },
+    {
+      "rule_id": "logging/disabled",
+      "title": "Access logging disabled",
+      "severity": "medium",
+      "message": "Bucket 'prod-backups-open' does not ship access logs.",
+      "bucket": "prod-backups-open",
+      "resource": null,
+      "evidence": {
+        "logging_enabled": false
+      },
+      "remediation": "Enable access logging to a dedicated audit bucket."
+    },
+    {
+      "rule_id": "versioning/disabled",
+      "title": "Object versioning disabled",
+      "severity": "medium",
+      "message": "Bucket 'prod-backups-open' has versioning disabled.",
+      "bucket": "prod-backups-open",
+      "resource": null,
+      "evidence": {
+        "versioning_enabled": false
+      },
+      "remediation": "Enable versioning on production and backup buckets."
+    },
+    {
+      "rule_id": "tags/missing-env",
+      "title": "Production-like bucket missing environment tag",
+      "severity": "low",
+      "message": "Bucket 'prod-backups-open' looks production-like but has no environment/env tag.",
+      "bucket": "prod-backups-open",
+      "resource": null,
+      "evidence": {
+        "tags": {
+          "storage_account": "fakeprodstorage"
+        }
+      },
+      "remediation": "Tag buckets with environment, owner, and data classification."
+    },
+    {
+      "rule_id": "azure/container-public-access",
+      "title": "Azure container allows anonymous blob access",
+      "severity": "high",
+      "message": "Container 'prod-backups-open' public access is set to 'container'.",
+      "bucket": "prod-backups-open",
+      "resource": null,
+      "evidence": {
+        "public_access": "container"
+      },
+      "remediation": "Set container public access to private unless CDN requires blob access."
+    },
+    {
+      "rule_id": "azure/account-public-access-enabled",
+      "title": "Storage account allows blob public access",
+      "severity": "high",
+      "message": "Storage account for 'prod-backups-open' has allowBlobPublicAccess enabled.",
+      "bucket": "prod-backups-open",
+      "resource": null,
+      "evidence": {
+        "allow_blob_public_access": true
+      },
+      "remediation": "Disable allowBlobPublicAccess on the storage account unless required."
+    },
+    {
+      "rule_id": "azure/account-public-access-enabled",
+      "title": "Storage account allows blob public access",
+      "severity": "high",
+      "message": "Storage account for 'internal-logs-secure' has allowBlobPublicAccess enabled.",
+      "bucket": "internal-logs-secure",
+      "resource": null,
+      "evidence": {
+        "allow_blob_public_access": true
+      },
+      "remediation": "Disable allowBlobPublicAccess on the storage account unless required."
+    },
+    {
+      "rule_id": "iam/stale-static-key",
+      "title": "Stale service account static key",
+      "severity": "high",
+      "message": "Service account key for deploy-sp is 365 days old (policy threshold: 90 days).",
+      "bucket": null,
+      "resource": "deploy-sp",
+      "evidence": {
+        "age_days": 365,
+        "key_id": "azur…id"
+      },
+      "remediation": "Rotate static keys regularly and prefer short-lived IAM tokens."
+    }
+  ],
+  "chains": [
+    {
+      "chain_id": "chain/silent-exfil",
+      "title": "Silent exfil path",
+      "severity": "critical",
+      "message": "Bucket 'prod-backups-open' is exposed while logging and versioning are off — exfiltration may go unnoticed and objects cannot be rolled back.",
+      "rule_ids": [
+        "acl/public-read",
+        "logging/disabled",
+        "versioning/disabled"
+      ],
+      "buckets": [
+        "prod-backups-open"
+      ]
+    }
+  ],
+  "new_findings": [],
+  "new_chains": [],
+  "baseline_path": null,
+  "summary": {
+    "total": 9,
+    "critical": 1,
+    "high": 5,
+    "medium": 2,
+    "low": 1,
+    "info": 0,
+    "chains": 1,
+    "score": 87,
+    "buckets_scanned": 2,
+    "suppressed": 0,
+    "new": 0
+  },
+  "method": "fixture"
+}

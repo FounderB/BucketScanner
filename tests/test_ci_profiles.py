@@ -17,7 +17,17 @@ CI_CONFIG = Path("examples/ci/.bucket-scanner.toml")
 
 @pytest.mark.parametrize(
     "profile",
-    ["yc-fixture", "aws-fixture", "stack-fixture", "azure-fixture", "gcs-fixture"],
+    [
+        "yc-fixture",
+        "aws-fixture",
+        "stack-fixture",
+        "azure-fixture",
+        "gcs-fixture",
+        "yc-prod-baseline",
+        "aws-prod-baseline",
+        "azure-prod-baseline",
+        "gcs-prod-baseline",
+    ],
 )
 def test_ci_profiles_load_and_scan(profile: str):
     app = load_config(CI_CONFIG)
@@ -72,3 +82,20 @@ def test_ci_profile_cli_json():
     payload = json.loads(result.output)
     assert payload["cloud"] == "aws"
     assert payload["method"] == "fixture"
+
+
+def test_ci_baseline_profile_delta_gate():
+    from bucket_scanner.gate import apply_gate
+
+    app = load_config(CI_CONFIG)
+    config = app.scan
+    profile = app.profiles["yc-prod-baseline"]
+    profile.apply_to(config)
+    report = run_scan(folder_id=None, fixture=profile.fixture, config=config)
+    report = apply_gate(
+        report,
+        suppressions=config.suppressions,
+        baseline_path=config.baseline_path,
+    )
+    assert report.new_findings == []
+    assert config.baseline_path == Path("baselines/yc-prod.json")

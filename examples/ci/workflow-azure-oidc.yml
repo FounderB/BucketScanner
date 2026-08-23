@@ -1,0 +1,42 @@
+# Azure OIDC — federated credential, no client secret in GitHub
+#
+# Prerequisites:
+#   1. Entra ID app registration + federated credential for GitHub Actions
+#   2. Role assignment: Reader on subscription + Storage Blob Data Reader
+#
+# Secrets (or use OIDC-only with azure/login):
+#   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
+#
+# Replace placeholders below.
+
+name: Bucket Scanner (Azure OIDC)
+
+on:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - uses: FounderB/BucketScanner/action@v1.1.0
+        with:
+          profile: azure-prod
+          config-path: .bucket-scanner.toml
+          folder-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          fail-on: new
+          baseline-path: baselines/azure-prod.json
+          sarif-path: bucket-scanner.sarif
+          compliance-report-path: compliance.json

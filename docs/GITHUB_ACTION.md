@@ -42,7 +42,7 @@ This repository ships fixture profiles under `examples/ci/`:
     fail-on: high
 ```
 
-Profiles: `yc-fixture`, `aws-fixture`, `stack-fixture`.
+Profiles: `yc-fixture`, `aws-fixture`, `stack-fixture`, `azure-fixture`, `gcs-fixture`, `strict-prod`, `audit-only`, `*-prod-baseline`.
 
 Copy-ready templates:
 
@@ -50,7 +50,12 @@ Copy-ready templates:
 |------|---------|
 | `examples/ci/workflow-scheduled.yml` | Weekly cron + `workflow_dispatch` |
 | `examples/ci/workflow-live.yml` | PR + daily live scan with secrets |
-| `examples/ci/.bucket-scanner.toml` | Fixture profiles for CI demos |
+| `examples/ci/workflow-aws-oidc.yml` | AWS OIDC + baseline delta |
+| `examples/ci/workflow-azure-oidc.yml` | Azure federated login + baseline |
+| `examples/ci/workflow-gcs-oidc.yml` | GCS Workload Identity Federation |
+| `examples/ci/workflow-baseline-prod.yml` | Matrix baseline gate (offline demo) |
+| `examples/ci/.bucket-scanner.toml` | Fixture + prod template profiles |
+| `examples/ci/.bucket-scanner.prod.toml.example` | Live prod config skeleton |
 
 ## Inputs
 
