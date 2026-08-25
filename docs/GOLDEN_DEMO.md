@@ -7,7 +7,7 @@ No cloud credentials required — uses offline fixtures from this repository.
 ## 1. Install
 
 ```bash
-pip install bucket-scanner==1.0.0
+pip install bucket-scanner==1.5.0
 # or from source:
 pip install -e ".[dev]"
 ```
@@ -57,7 +57,7 @@ done
 
 See [examples/golden-demo/workflow.yml](../examples/golden-demo/workflow.yml):
 
-- Installs `bucket-scanner==1.0.0` from PyPI
+- Installs `bucket-scanner==1.5.0` from PyPI
 - Runs `yc-fixture` profile
 - Uploads SARIF + JSON artifacts
 

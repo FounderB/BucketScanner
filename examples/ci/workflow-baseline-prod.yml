@@ -39,7 +39,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - uses: FounderB/BucketScanner/action@v1.1.0
+      - uses: FounderB/BucketScanner/action@v1.5.0
         with:
           profile: ${{ matrix.profile }}
           config-path: examples/ci/.bucket-scanner.toml
@@ -58,7 +58,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install bucket-scanner==1.1.0
+      - run: pip install bucket-scanner==1.5.0
       - name: Regenerate baseline (manual)
         run: |
           bucket-scanner scan \

@@ -7,7 +7,7 @@ Bucket Scanner is published as [`bucket-scanner`](https://pypi.org/project/bucke
 ```bash
 pip install bucket-scanner
 pip install "bucket-scanner[gcs]"
-pip install "bucket-scanner==1.0.0"
+pip install "bucket-scanner==1.5.0"
 ```
 
 ## Maintainer release
@@ -18,9 +18,9 @@ pip install "bucket-scanner==1.0.0"
 4. Tag and push:
 
 ```bash
-git tag v0.12.0
+git tag v1.5.0
 git push origin main
-git push origin v0.12.0
+git push origin v1.5.0
 ```
 
 5. GitHub Actions workflow [`.github/workflows/publish.yml`](../.github/workflows/publish.yml) builds and uploads on tag push
@@ -49,9 +49,9 @@ bucket-scanner --help
 After publish, external workflows can use:
 
 ```yaml
-- uses: FounderB/BucketScanner/action@v1.0.0
+- uses: FounderB/BucketScanner/action@v1.5.0
   with:
-    version: "1.0.0"
+    version: "1.5.0"
     profile: yc-prod
 ```
 

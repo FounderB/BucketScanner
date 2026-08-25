@@ -12,6 +12,14 @@ PUBLIC_RULES = {
     "policy/overly-permissive",
     "yc/anonymous-read-enabled",
     "yc/anonymous-list-enabled",
+    "azure/container-public-access",
+    "azure/account-public-access-enabled",
+    "gcs/iam-public-principal",
+    "aws/block-public-access-missing",
+    "aws/account-public-access-missing",
+}
+PRIVILEGED_RULES = {
+    "iam/over-privileged-sa",
 }
 SECRET_RULES = {
     "secrets/yc-env-var",
@@ -30,6 +38,9 @@ def compose_chains(
     chains: list[ChainFinding] = []
     by_bucket: dict[str, list[Finding]] = {}
     global_rules = {finding.rule_id for finding in findings}
+    global_privileged = [
+        finding for finding in findings if finding.rule_id in PRIVILEGED_RULES
+    ]
 
     for finding in findings:
         if finding.bucket:
@@ -68,6 +79,23 @@ def compose_chains(
                         "but access logging is disabled."
                     ),
                     rule_ids=sorted(rule_ids),
+                    buckets=[bucket.name],
+                )
+            )
+
+        if is_public and (rule_ids & PRIVILEGED_RULES or global_privileged):
+            priv_rules = sorted((rule_ids & PRIVILEGED_RULES) | {f.rule_id for f in global_privileged})
+            pub_rules = sorted(rule_ids & PUBLIC_RULES)
+            chains.append(
+                ChainFinding(
+                    chain_id="chain/privileged-public-blast",
+                    title="Over-privileged principal meets public storage",
+                    severity=Severity.CRITICAL,
+                    message=(
+                        f"Bucket '{bucket.name}' is publicly exposed while an over-privileged "
+                        "service account / IAM principal exists in scope — blast radius is elevated."
+                    ),
+                    rule_ids=sorted(set(priv_rules + pub_rules)),
                     buckets=[bucket.name],
                 )
             )
