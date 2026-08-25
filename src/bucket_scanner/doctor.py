@@ -70,7 +70,8 @@ def build_doctor_report(
             _check(
                 "folder_id",
                 "warn",
-                "No folder_id in .bucket-scanner.toml (use --folder-id or init)",
+                "No folder_id / subscription / project in config "
+                "(live scan needs --folder-id; offline fixture does not)",
             )
         )
         issues += 1
@@ -83,13 +84,27 @@ def build_doctor_report(
         )
         checks.append(_check("credentials", "ok", f"resolved via {credentials.source}"))
     except CredentialError as exc:
-        checks.append(_check("credentials", "error", str(exc)))
+        checks.append(
+            _check(
+                "credentials",
+                "warn",
+                f"{exc} — live scan blocked; offline fixture still works",
+            )
+        )
         return {
             "tool": "bucket-scanner",
             "command": "doctor",
             "cloud": active_cloud.value,
-            "exit_code": 2,
+            "exit_code": 1,
             "checks": checks,
+            "next_steps": [
+                "Offline (no cloud secrets): bucket-scanner scan "
+                "--fixture examples/demo-vulnerable/fixture.toml --fail-on high",
+                "Live: set cloud credentials then re-run bucket-scanner doctor "
+                "(see docs/QUICKSTART.md §6)",
+                "Init a profile: bucket-scanner init --preset yc-prod "
+                "(or aws-prod / azure-prod / gcs-prod)",
+            ],
         }
 
     if active_cloud == CloudProvider.AWS:
@@ -211,7 +226,14 @@ def build_doctor_report(
         if client.ping(folder_id=scan_config.folder_id):
             checks.append(_check("iam_api", "ok", "reachable"))
         else:
-            checks.append(_check("iam_api", "error", "unreachable"))
+            checks.append(
+                _check(
+                    "iam_api",
+                    "error",
+                    "unreachable — check YC_TOKEN validity, network, "
+                    "and folderId (List serviceAccounts requires it)",
+                )
+            )
             issues += 1
     else:
         checks.append(
@@ -265,7 +287,18 @@ def run_doctor(
         prefix = {"ok": "[green]✓[/green]", "warn": "[yellow]![/yellow]", "error": "[red]✗[/red]"}
         label = item["name"].replace("_", " ")
         out.print(f"{prefix.get(status, status)} {label}: {item['message']}")
-    return int(report["exit_code"])
+    next_steps = report.get("next_steps") or []
+    if next_steps:
+        out.print("\n[bold]Next steps[/bold]")
+        for step in next_steps:
+            out.print(f"  → {step}")
+    exit_code = int(report["exit_code"])
+    if exit_code == 1 and not next_steps:
+        out.print(
+            "\n[dim]Warnings only — live scan may still work; "
+            "or use --fixture for offline proof (docs/QUICKSTART.md).[/dim]"
+        )
+    return exit_code
 
 
 def render_doctor_json(

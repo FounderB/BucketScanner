@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/AWS-S3-FF9900?style=flat-square" alt="AWS S3"/>
   <img src="https://img.shields.io/badge/SARIF-2.1.0-2ee6a6?style=flat-square" alt="SARIF 2.1.0"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-5eead4?style=flat-square" alt="MIT"/></a>
-  <img src="https://img.shields.io/badge/stable-v1.3.1-2ee6a6?style=flat-square" alt="v1.3"/>
+  <img src="https://img.shields.io/badge/stable-v1.5.0-2ee6a6?style=flat-square" alt="v1.5"/>
 </p>
 
 <p align="center">
@@ -45,7 +45,7 @@
 
 Buckets drift. ACL says `private`, policy leaks `public-read`. Versioning is off, logging never enabled, a service account key outlived three rotations — and nobody noticed until exfil.
 
-Bucket Scanner walks your **Object Storage** (Yandex Cloud by default, **AWS S3** optional) and surfaces gaps between **what you declare** and **what actually ships**:
+Bucket Scanner walks your **Object Storage** across **Yandex Cloud · AWS S3 · Azure Blob · GCS** and surfaces gaps between **what you declare** and **what actually ships**:
 
 | You declare | Bucket Scanner checks |
 |-------------|----------------------|
@@ -79,7 +79,7 @@ Part of the **FounderB security stack**: [Tracefuse](https://github.com/FounderB
 
 ```bash
 pip install bucket-scanner
-# pin: pip install bucket-scanner==1.3.1
+# pin: pip install bucket-scanner==1.5.0
 bucket-scanner --help
 ```
 
@@ -96,7 +96,7 @@ make hooks   # install local git author guard
 See [docs/PYPI.md](docs/PYPI.md) for version pins and maintainer publishing.  
 **Start here:** [docs/QUICKSTART.md](docs/QUICKSTART.md) · **Golden demo:** [docs/GOLDEN_DEMO.md](docs/GOLDEN_DEMO.md) · **Compliance:** [docs/COMPLIANCE.md](docs/COMPLIANCE.md)
 
-**Requirements:** Python **3.11+**, Yandex Cloud credentials (default) or AWS credentials (`--cloud aws`). See [docs/AWS.md](docs/AWS.md).
+**Requirements:** Python **3.11+**. No cloud credentials needed for the offline fixture demo ([QUICKSTART](docs/QUICKSTART.md)). Live scans support **Yandex Cloud, AWS S3, Azure Blob, and GCS** equally — see [docs/AWS.md](docs/AWS.md), [docs/AZURE.md](docs/AZURE.md), [docs/GCS.md](docs/GCS.md).
 
 ---
 
@@ -385,6 +385,10 @@ See [SECURITY.md](SECURITY.md) and [docs/AUDIT.md](docs/AUDIT.md).
 - [x] **v1.0 stable** — four-cloud live scan + PyPI + CI gates
 - [x] **v1.1** — Terraform Azure/GCS drift, compliance export, Tracefuse polish
 - [x] **v1.2 field deployment** — prod profiles, baselines/, OIDC workflows (AWS/Azure/GCS), Grafana VM guide, multi-scope Azure/GCS
+- [x] **v1.3** — medium-audience onboarding (QUICKSTART, presets, doctor, live-scan templates)
+- [x] **v1.4–1.5** — live YC API fixes, Bucket.Get enrichment, ephemeral S3 keys, website/CORS findings
+- [ ] **v1.6** — multi-cloud security depth (BPA parity, blast-radius chains, Object Lock)
+- [ ] **v1.7** — ops product (suppression audit, hard baseline gate, per-rule metrics, Slack notify)
 
 ---
 

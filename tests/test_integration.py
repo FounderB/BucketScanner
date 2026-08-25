@@ -41,7 +41,7 @@ def test_resolve_credentials_static_keys(monkeypatch):
 def test_doctor_missing_credentials(monkeypatch):
     monkeypatch.delenv("YC_TOKEN", raising=False)
     monkeypatch.delenv("YC_ACCESS_KEY_ID", raising=False)
-    assert run_doctor(Console(file=StringIO())) == 2
+    assert run_doctor(Console(file=StringIO())) == 1
 
 
 @patch("bucket_scanner.doctor.load_config")
