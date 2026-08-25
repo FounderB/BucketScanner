@@ -1,53 +1,55 @@
-# Live scan — requires repository secrets (disabled on fork PRs without secrets)
+# Live scan — fixture smoke always; live YC when secrets exist
 name: Live scan
 
 on:
   workflow_dispatch:
     inputs:
       profile:
-        description: Profile from .bucket-scanner.toml
+        description: Live profile (used when YC_TOKEN is set)
         default: yc-prod
         type: string
   schedule:
-    - cron: "0 7 * * 1"
+    # Daily 07:00 UTC — fixture smoke always; live if secrets present
+    - cron: "0 7 * * *"
 
 permissions:
   contents: read
   security-events: write
 
 jobs:
-  doctor:
+  fixture-smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use prod config if present
-        run: |
-          if [ ! -f .bucket-scanner.toml ]; then
-            cp examples/ci/.bucket-scanner.prod.toml.example .bucket-scanner.toml
-          fi
-      - uses: ./action
+      - uses: actions/setup-python@v5
         with:
-          profile: ${{ github.event.inputs.profile || 'yc-prod' }}
-          config-path: .bucket-scanner.toml
-          run-doctor: "true"
-          doctor-only: "true"
-        env:
-          YC_TOKEN: ${{ secrets.YC_TOKEN }}
-          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-        continue-on-error: true
+          python-version: "3.12"
+      - name: Install
+        run: pip install .
+      - name: Fixture proof run
+        run: |
+          set +e
+          bucket-scanner scan \
+            --fixture examples/demo-vulnerable/fixture.toml \
+            --fail-on high \
+            --json --sarif fixture.sarif -q > fixture-report.json
+          rc=$?
+          set -e
+          if [ "$rc" -ne 0 ] && [ "$rc" -ne 1 ]; then exit "$rc"; fi
+          bucket-scanner proof-log update --report fixture-report.json --log proofs/fp-log-ci.jsonl
+          bucket-scanner proof-log summary --log proofs/fp-log-ci.jsonl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fixture-proof
+          path: |
+            fixture-report.json
+            fixture.sarif
+            proofs/fp-log-ci.jsonl
 
-  scan:
+  live-yc:
+    if: ${{ secrets.YC_TOKEN != '' }}
     runs-on: ubuntu-latest
-    needs: doctor
     steps:
       - uses: actions/checkout@v4
       - name: Use prod config if present
@@ -64,19 +66,21 @@ jobs:
           json-path: bucket-scanner.json
           compliance-report-path: compliance.json
           run-doctor: "true"
+          probe: "true"
         env:
           YC_TOKEN: ${{ secrets.YC_TOKEN }}
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
         continue-on-error: true
+      - name: Update proof log from live report
+        if: always()
+        run: |
+          if [ ! -f bucket-scanner.json ]; then
+            echo "No live JSON report; skip proof-log"
+            exit 0
+          fi
+          pip install -q .
+          bucket-scanner proof-log update --report bucket-scanner.json --log proofs/fp-log-live.jsonl
+          bucket-scanner proof-log summary --log proofs/fp-log-live.jsonl
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -85,3 +89,5 @@ jobs:
             bucket-scanner.json
             bucket-scanner.sarif
             compliance.json
+            doctor-report.json
+            proofs/fp-log-live.jsonl

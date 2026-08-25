@@ -25,6 +25,16 @@ from bucket_scanner.gate import apply_gate, write_baseline_report
 from bucket_scanner.models import ScanReport, Severity
 from bucket_scanner.notify import NotifyConfig, notify_all
 from bucket_scanner.presets import PRESET_NAMES
+from bucket_scanner.proof import (
+    VALID_STATUSES,
+    load_log,
+    load_report,
+    render_summary_text,
+    set_status,
+    summarize,
+    upsert_from_report,
+    write_log,
+)
 from bucket_scanner.report.human import render_human
 from bucket_scanner.report.json_report import render_json
 from bucket_scanner.report.prometheus import render_prometheus
@@ -697,6 +707,100 @@ def init(force: bool, preset: str | None, path: Path) -> None:
         raise SystemExit(2) from exc
     label = f"preset {preset}" if preset else "default template"
     console.print(f"[green]Wrote[/green] {target} ({label})")
+    raise SystemExit(0)
+
+
+@main.group("proof-log")
+def proof_log_group() -> None:
+    """Maintain an FP/FN triage log from scan JSON reports."""
+
+
+@proof_log_group.command("update")
+@click.option(
+    "--report",
+    "report_path",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="Scan JSON report (from --json).",
+)
+@click.option(
+    "--log",
+    "log_path",
+    required=True,
+    type=click.Path(path_type=Path),
+    help="JSONL proof log path (created if missing).",
+)
+@click.option("--json", "as_json", is_flag=True, help="Emit machine-readable summary.")
+def proof_log_update(report_path: Path, log_path: Path, as_json: bool) -> None:
+    """Upsert findings from a scan report into the proof log."""
+    report = load_report(report_path)
+    entries = load_log(log_path)
+    entries, new_count, refreshed = upsert_from_report(report, entries)
+    write_log(log_path, entries)
+    summary = summarize(entries)
+    payload = {
+        "log": str(log_path),
+        "new": new_count,
+        "refreshed": refreshed,
+        "summary": summary,
+    }
+    if as_json:
+        console.print_json(data=payload)
+    else:
+        console.print(
+            f"[green]Updated[/green] {log_path} "
+            f"(+{new_count} new, {refreshed} seen again)"
+        )
+        console.print(render_summary_text(summary))
+    raise SystemExit(0)
+
+
+@proof_log_group.command("summary")
+@click.option(
+    "--log",
+    "log_path",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+)
+@click.option("--json", "as_json", is_flag=True)
+def proof_log_summary(log_path: Path, as_json: bool) -> None:
+    """Show triage stats for a proof log."""
+    summary = summarize(load_log(log_path))
+    if as_json:
+        console.print_json(data=summary)
+    else:
+        console.print(render_summary_text(summary))
+    raise SystemExit(0)
+
+
+@proof_log_group.command("set")
+@click.option(
+    "--log",
+    "log_path",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+)
+@click.option("--fingerprint", required=True, help="rule|bucket|resource fingerprint.")
+@click.option(
+    "--status",
+    "status_value",
+    required=True,
+    type=click.Choice(sorted(VALID_STATUSES), case_sensitive=False),
+)
+@click.option("--notes", default=None, help="Optional triage note.")
+def proof_log_set(log_path: Path, fingerprint: str, status_value: str, notes: str | None) -> None:
+    """Mark one finding as confirmed / false_positive / accepted_risk / fixed."""
+    entries = load_log(log_path)
+    try:
+        row = set_status(entries, fingerprint, status_value.lower(), notes=notes)
+    except (KeyError, ValueError) as exc:
+        console.print(f"[red]error:[/red] {exc}")
+        raise SystemExit(2) from exc
+    write_log(log_path, entries)
+    console.print(
+        f"[green]Set[/green] {fingerprint} → {row['status']}"
+        + (f" ({notes})" if notes else "")
+    )
     raise SystemExit(0)
 
 

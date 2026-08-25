@@ -2,6 +2,15 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [1.9.0] - 2026-08-25
+
+### Added (live proof)
+
+- `bucket-scanner proof-log` — JSONL FP/FN triage (`update` / `summary` / `set`)
+- `scripts/live_proof.sh` + `make live-proof` — doctor → scan → proof-log
+- `docs/LIVE_PROOF.md` — field calibration runbook
+- Live scan workflow: daily fixture smoke always; live YC when `YC_TOKEN` set; proof-log artifacts
+
 ## [1.8.1] - 2026-08-25
 
 ### Fixed

@@ -87,10 +87,12 @@ Presets: `yc-prod`, `aws-prod`, `azure-prod`, `gcs-prod`, `audit-only`, `ci-offl
 See [POLICY_PRESETS.md](POLICY_PRESETS.md).
 
 Live workflow template: [examples/ci/workflow-live.yml](../examples/ci/workflow-live.yml)  
-Copy [.github/workflows/live-scan.yml](../.github/workflows/live-scan.yml) and set repository secrets.
+Copy [.github/workflows/live-scan.yml](../.github/workflows/live-scan.yml) and set repository secrets.  
+Field calibration: [LIVE_PROOF.md](LIVE_PROOF.md) (`make live-proof`, `proof-log`).
 
 ## Next steps
 
+- [LIVE_PROOF.md](LIVE_PROOF.md) — fixture → live → FP triage  
 - [MIGRATION.md](MIGRATION.md) — from manual checklists  
 - [GRAFANA.md](GRAFANA.md) — continuous metrics on a VM  
 - [GOLDEN_DEMO.md](GOLDEN_DEMO.md) — full stack demo  

@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: FounderB/BucketScanner/action@v1.7.1
+      - uses: FounderB/BucketScanner/action@v1.9.0
         with:
           profile: ${{ github.event.inputs.profile || 'yc-prod' }}
           config-path: .bucket-scanner.toml
@@ -40,6 +40,7 @@ jobs:
           sarif-path: bucket-scanner.sarif
           json-path: bucket-scanner.json
           compliance-report-path: compliance.json
+          version: "1.9.0"
         env:
           YC_TOKEN: ${{ secrets.YC_TOKEN }}
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}

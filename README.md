@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/AWS-S3-FF9900?style=flat-square" alt="AWS S3"/>
   <img src="https://img.shields.io/badge/SARIF-2.1.0-2ee6a6?style=flat-square" alt="SARIF 2.1.0"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-5eead4?style=flat-square" alt="MIT"/></a>
-  <img src="https://img.shields.io/badge/stable-v1.8.1-2ee6a6?style=flat-square" alt="v1.8"/>
+  <img src="https://img.shields.io/badge/stable-v1.9.0-2ee6a6?style=flat-square" alt="v1.9"/>
 </p>
 
 <p align="center">
@@ -79,7 +79,7 @@ Part of the **FounderB security stack**: [Tracefuse](https://github.com/FounderB
 
 ```bash
 pip install bucket-scanner
-# pin: pip install bucket-scanner==1.8.1
+# pin: pip install bucket-scanner==1.9.0
 bucket-scanner --help
 ```
 
@@ -390,6 +390,7 @@ See [SECURITY.md](SECURITY.md) and [docs/AUDIT.md](docs/AUDIT.md).
 - [x] **v1.6** — multi-cloud security depth (BPA parity, blast-radius chains, Object Lock)
 - [x] **v1.7** — ops product (suppression audit, hard baseline gate, per-rule metrics, Slack notify)
 - [x] **v1.8** — calibration (PUBLIC_RULES FP, account BPA unknown, multi-cloud truthfulness)
+- [x] **v1.9** — live proof tooling (`proof-log`, daily fixture smoke, FP triage runbook)
 
 ---
 
