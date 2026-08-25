@@ -1,13 +1,13 @@
 {
   "tool": "bucket-scanner",
   "report_schema": "1.0",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "cloud": "gcs",
   "folder_id": "project-FAKE-GCS-00000001",
   "scope_ids": [
     "project-FAKE-GCS-00000001"
   ],
-  "scanned_at": "2026-08-25T16:59:50.485775Z",
+  "scanned_at": "2026-08-25T17:29:01.082171Z",
   "probe_enabled": false,
   "buckets": [
     {
@@ -82,18 +82,6 @@
     }
   ],
   "findings": [
-    {
-      "rule_id": "acl/public-read",
-      "title": "Bucket ACL allows anonymous access",
-      "severity": "critical",
-      "message": "Bucket 'prod-backups-open' ACL is 'public-read'.",
-      "bucket": "prod-backups-open",
-      "resource": null,
-      "evidence": {
-        "acl": "public-read"
-      },
-      "remediation": "Set bucket ACL to private and use signed URLs or IAM policies."
-    },
     {
       "rule_id": "encryption/disabled",
       "title": "Default encryption disabled",
@@ -189,7 +177,7 @@
       "resource": "deploy-sa@fake-prod-project.iam.gserviceaccount.com",
       "evidence": {
         "age_days": 365,
-        "key_id": "gcs-\u2026id"
+        "key_id": "gcs-…id"
       },
       "remediation": "Rotate static keys regularly and prefer short-lived IAM tokens."
     }
@@ -199,9 +187,8 @@
       "chain_id": "chain/silent-exfil",
       "title": "Silent exfil path",
       "severity": "critical",
-      "message": "Bucket 'prod-backups-open' is exposed while logging and versioning are off \u2014 exfiltration may go unnoticed and objects cannot be rolled back.",
+      "message": "Bucket 'prod-backups-open' is exposed while logging and versioning are off — exfiltration may go unnoticed and objects cannot be rolled back.",
       "rule_ids": [
-        "acl/public-read",
         "gcs/iam-public-principal",
         "logging/disabled",
         "versioning/disabled"
@@ -214,16 +201,17 @@
   "new_findings": [],
   "new_chains": [],
   "suppressed_findings": [],
+  "warnings": [],
   "baseline_path": "baselines/gcs-prod.json",
   "summary": {
-    "total": 9,
-    "critical": 1,
+    "total": 8,
+    "critical": 0,
     "high": 4,
     "medium": 3,
     "low": 1,
     "info": 0,
     "chains": 1,
-    "score": 82,
+    "score": 57,
     "buckets_scanned": 2,
     "suppressed": 0,
     "new": 0,

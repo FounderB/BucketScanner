@@ -68,7 +68,12 @@ def resolve_bucket_region(client: BaseClient, bucket_name: str, *, default: str)
 def get_account_public_access_block(
     credentials: AwsCredentials,
     account_id: str,
-) -> dict[str, Any] | None:
+) -> tuple[dict[str, Any] | None, str]:
+    """Return ``(config, status)``.
+
+    status is ``ok`` | ``missing`` | ``unknown``.
+    ``config`` is the BPA dict when status is ``ok``; otherwise ``None``.
+    """
     session_kwargs: dict[str, Any] = {}
     if credentials.profile:
         session_kwargs["profile_name"] = credentials.profile
@@ -80,10 +85,15 @@ def get_account_public_access_block(
         if credentials.session_token:
             client_kwargs["aws_session_token"] = credentials.session_token
     control = session.client("s3control", **client_kwargs)
-    response, _err = safe_s3_call(control, "get_public_access_block", AccountId=account_id)
-    if not response:
-        return None
-    return response.get("PublicAccessBlockConfiguration")
+    response, err = safe_s3_call(control, "get_public_access_block", AccountId=account_id)
+    if response:
+        return response.get("PublicAccessBlockConfiguration") or {}, "ok"
+    if err in {
+        "NoSuchPublicAccessBlockConfiguration",
+        "NoSuchPublicAccessBlock",
+    }:
+        return None, "missing"
+    return None, "unknown"
 
 
 def snapshot_aws_bucket(

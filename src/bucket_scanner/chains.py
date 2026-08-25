@@ -13,11 +13,9 @@ PUBLIC_RULES = {
     "yc/anonymous-read-enabled",
     "yc/anonymous-list-enabled",
     "azure/container-public-access",
-    "azure/account-public-access-enabled",
     "gcs/iam-public-principal",
-    "aws/block-public-access-missing",
-    "aws/account-public-access-missing",
 }
+# Hardening gaps (missing BPA etc.) are findings, not "public exposure" for CRITICAL chains.
 PRIVILEGED_RULES = {
     "iam/over-privileged-sa",
 }

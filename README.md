@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/AWS-S3-FF9900?style=flat-square" alt="AWS S3"/>
   <img src="https://img.shields.io/badge/SARIF-2.1.0-2ee6a6?style=flat-square" alt="SARIF 2.1.0"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-5eead4?style=flat-square" alt="MIT"/></a>
-  <img src="https://img.shields.io/badge/stable-v1.7.1-2ee6a6?style=flat-square" alt="v1.7"/>
+  <img src="https://img.shields.io/badge/stable-v1.8.0-2ee6a6?style=flat-square" alt="v1.8"/>
 </p>
 
 <p align="center">
@@ -79,7 +79,7 @@ Part of the **FounderB security stack**: [Tracefuse](https://github.com/FounderB
 
 ```bash
 pip install bucket-scanner
-# pin: pip install bucket-scanner==1.7.1
+# pin: pip install bucket-scanner==1.8.0
 bucket-scanner --help
 ```
 
@@ -389,6 +389,7 @@ See [SECURITY.md](SECURITY.md) and [docs/AUDIT.md](docs/AUDIT.md).
 - [x] **v1.4–1.5** — live YC API fixes, Bucket.Get enrichment, ephemeral S3 keys, website/CORS findings
 - [x] **v1.6** — multi-cloud security depth (BPA parity, blast-radius chains, Object Lock)
 - [x] **v1.7** — ops product (suppression audit, hard baseline gate, per-rule metrics, Slack notify)
+- [x] **v1.8** — calibration (PUBLIC_RULES FP, account BPA unknown, multi-cloud truthfulness)
 
 ---
 

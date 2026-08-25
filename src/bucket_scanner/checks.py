@@ -9,7 +9,19 @@ from collections.abc import Iterable
 from bucket_scanner.models import BucketSnapshot, Finding, ServiceAccountKeySnapshot, Severity
 
 PUBLIC_ACL_VALUES = {"public-read", "public-read-write", "public"}
-PROD_LIKE = re.compile(r"(prod|backup|archive|payment|pii)", re.IGNORECASE)
+# Word boundaries avoid "product" / "productionx" false hits from bare "prod".
+PROD_LIKE = re.compile(
+    r"(?:^|[^a-z0-9])(prod|production|backup|archive|payment|pii)(?:[^a-z0-9]|$)",
+    re.IGNORECASE,
+)
+ACCOUNT_SCOPED_RULES = frozenset(
+    {
+        "aws/account-public-access-missing",
+        "aws/account-public-access-incomplete",
+        "aws/account-public-access-unknown",
+        "azure/account-public-access-enabled",
+    }
+)
 RISKY_POLICY_NAMES = {
     "AdministratorAccess",
     "AmazonS3FullAccess",
@@ -122,6 +134,9 @@ def _is_over_privileged(roles: list[str]) -> bool:
 
 
 def _check_acl(bucket: BucketSnapshot) -> list[Finding]:
+    # Azure/GCS synthesize acl=public-read from cloud-native flags; use native rules only.
+    if bucket.cloud in {"azure", "gcs"}:
+        return []
     if bucket.acl not in PUBLIC_ACL_VALUES:
         return []
     rule_id = "acl/public-read-write" if bucket.acl == "public-read-write" else "acl/public-read"
@@ -344,79 +359,125 @@ def _check_block_public_access(bucket: BucketSnapshot) -> list[Finding]:
     if bucket.cloud != "aws":
         return []
     findings: list[Finding] = []
-    if "block_public_access" in bucket.partial_metadata:
-        return findings
-
     bpa_keys = (
         "BlockPublicAcls",
         "IgnorePublicAcls",
         "BlockPublicPolicy",
         "RestrictPublicBuckets",
     )
-    config = bucket.block_public_access
-    if config is None or config == {}:
-        findings.append(
-            Finding(
-                rule_id="aws/block-public-access-missing",
-                title="S3 Block Public Access not configured",
-                severity=Severity.HIGH,
-                message=(
-                    f"Bucket '{bucket.name}' has no Block Public Access configuration — "
-                    "public ACLs/policies are not blocked at the bucket layer."
-                ),
-                bucket=bucket.name,
-                evidence={"block_public_access": None},
-                remediation="Enable all four Block Public Access settings on the bucket.",
-            )
-        )
-    elif not all(config.get(key, False) for key in bpa_keys):
-        findings.append(
-            Finding(
-                rule_id="aws/block-public-access-incomplete",
-                title="S3 Block Public Access incomplete",
-                severity=Severity.HIGH,
-                message=(
-                    f"Bucket '{bucket.name}' does not enforce all Block Public Access settings."
-                ),
-                bucket=bucket.name,
-                evidence={"block_public_access": config},
-                remediation="Enable all four Block Public Access settings on the bucket.",
-            )
-        )
 
-    account = bucket.account_public_access_block
-    if account is None or account == {}:
+    # Bucket BPA and account BPA are independent — do not early-return on either partial.
+    if "block_public_access" not in bucket.partial_metadata:
+        config = bucket.block_public_access
+        if config is None or config == {}:
+            findings.append(
+                Finding(
+                    rule_id="aws/block-public-access-missing",
+                    title="S3 Block Public Access not configured",
+                    severity=Severity.HIGH,
+                    message=(
+                        f"Bucket '{bucket.name}' has no Block Public Access configuration — "
+                        "public ACLs/policies are not blocked at the bucket layer."
+                    ),
+                    bucket=bucket.name,
+                    evidence={"block_public_access": None},
+                    remediation="Enable all four Block Public Access settings on the bucket.",
+                )
+            )
+        elif not all(config.get(key, False) for key in bpa_keys):
+            findings.append(
+                Finding(
+                    rule_id="aws/block-public-access-incomplete",
+                    title="S3 Block Public Access incomplete",
+                    severity=Severity.HIGH,
+                    message=(
+                        f"Bucket '{bucket.name}' does not enforce all Block Public Access settings."
+                    ),
+                    bucket=bucket.name,
+                    evidence={"block_public_access": config},
+                    remediation="Enable all four Block Public Access settings on the bucket.",
+                )
+            )
+
+    if "account_public_access" in bucket.partial_metadata:
         findings.append(
             Finding(
-                rule_id="aws/account-public-access-missing",
-                title="Account-level Block Public Access not configured",
-                severity=Severity.HIGH,
+                rule_id="aws/account-public-access-unknown",
+                title="Account-level Block Public Access could not be read",
+                severity=Severity.MEDIUM,
                 message=(
-                    "AWS account has no S3 Block Public Access configuration — "
-                    "new buckets may be publicly exposable."
+                    "Could not read account-level S3 Block Public Access "
+                    "(AccessDenied or API error) — not treated as missing."
                 ),
                 bucket=bucket.name,
-                evidence={"account_public_access_block": None},
+                evidence={"account_id": bucket.folder_id, "partial": "account_public_access"},
                 remediation=(
-                    "Enable account-level S3 Block Public Access in AWS console or org policy."
+                    "Grant s3:GetAccountPublicAccessBlock (or equivalent) to the scanner role."
                 ),
             )
         )
-    elif not all(account.get(key, False) for key in bpa_keys):
-        findings.append(
-            Finding(
-                rule_id="aws/account-public-access-incomplete",
-                title="Account-level Block Public Access incomplete",
-                severity=Severity.HIGH,
-                message="AWS account does not enforce full Block Public Access.",
-                bucket=bucket.name,
-                evidence={"account_public_access_block": account},
-                remediation=(
-                    "Enable account-level S3 Block Public Access in AWS console or org policy."
-                ),
+    else:
+        account = bucket.account_public_access_block
+        if account is None or account == {}:
+            findings.append(
+                Finding(
+                    rule_id="aws/account-public-access-missing",
+                    title="Account-level Block Public Access not configured",
+                    severity=Severity.HIGH,
+                    message=(
+                        "AWS account has no S3 Block Public Access configuration — "
+                        "new buckets may be publicly exposable."
+                    ),
+                    bucket=bucket.name,
+                    evidence={
+                        "account_public_access_block": None,
+                        "account_id": bucket.folder_id,
+                    },
+                    remediation=(
+                        "Enable account-level S3 Block Public Access in AWS console or org policy."
+                    ),
+                )
             )
-        )
+        elif not all(account.get(key, False) for key in bpa_keys):
+            findings.append(
+                Finding(
+                    rule_id="aws/account-public-access-incomplete",
+                    title="Account-level Block Public Access incomplete",
+                    severity=Severity.HIGH,
+                    message="AWS account does not enforce full Block Public Access.",
+                    bucket=bucket.name,
+                    evidence={
+                        "account_public_access_block": account,
+                        "account_id": bucket.folder_id,
+                    },
+                    remediation=(
+                        "Enable account-level S3 Block Public Access in AWS console or org policy."
+                    ),
+                )
+            )
     return findings
+
+
+def dedupe_account_scoped_findings(findings: list[Finding]) -> list[Finding]:
+    """Emit account/storage-account scoped rules once per scope."""
+    seen: set[tuple[str, str]] = set()
+    out: list[Finding] = []
+    for finding in findings:
+        if finding.rule_id not in ACCOUNT_SCOPED_RULES:
+            out.append(finding)
+            continue
+        scope = str(
+            finding.evidence.get("storage_account")
+            or finding.evidence.get("account_id")
+            or finding.resource
+            or "default"
+        )
+        key = (finding.rule_id, scope)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(finding)
+    return out
 
 
 def _check_azure_public_access(bucket: BucketSnapshot) -> list[Finding]:
@@ -441,6 +502,7 @@ def _check_azure_public_access(bucket: BucketSnapshot) -> list[Finding]:
         )
     account = bucket.account_public_access_block or {}
     if account.get("allow_blob_public_access") is True:
+        storage_account = bucket.tags.get("storage_account")
         findings.append(
             Finding(
                 rule_id="azure/account-public-access-enabled",
@@ -448,7 +510,10 @@ def _check_azure_public_access(bucket: BucketSnapshot) -> list[Finding]:
                 severity=Severity.HIGH,
                 message=(f"Storage account for '{bucket.name}' has allowBlobPublicAccess enabled."),
                 bucket=bucket.name,
-                evidence={"allow_blob_public_access": True},
+                evidence={
+                    "allow_blob_public_access": True,
+                    "storage_account": storage_account,
+                },
                 remediation="Disable allowBlobPublicAccess on the storage account unless required.",
             )
         )

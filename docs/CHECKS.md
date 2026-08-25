@@ -22,6 +22,7 @@
 | `yc/cors-enabled` | medium | CORS rules present on the bucket |
 | `aws/block-public-access-missing` | high | No bucket BPA configuration |
 | `aws/account-public-access-missing` | high | No account BPA configuration |
+| `aws/account-public-access-unknown` | medium | Account BPA unreadable (AccessDenied ≠ missing) |
 | `aws/block-public-access-incomplete` | high | S3 bucket Block Public Access incomplete |
 | `aws/account-public-access-incomplete` | high | Account Block Public Access incomplete |
 | `iac/acl-drift` | critical | Terraform private, live public |
@@ -31,14 +32,12 @@
 | `tags/missing-env` | low | Prod-like name without env tag |
 | `metadata/limited` | info | Inventory-only when Bucket.Get/ephemeral unavailable |
 | `chain/privileged-public-blast` | critical | Over-priv SA + public exposure |
-| `chain/silent-exfil` | critical | public-read + no-logging + no-versioning |
+| `chain/silent-exfil` | critical | Confirmed public exposure + no-logging + no-versioning (hardening gaps alone do not trigger) |
 | `chain/leaked-credentials-exposure` | critical | repo secrets + public bucket |
 | `secrets/yc-env-var` | critical | YC credential assignment in repo |
 | `secrets/yc-static-key` | critical | YC static key pattern in repo |
 | `secrets/aws-env-var` | critical | AWS credential assignment in repo |
 | `secrets/aws-access-key-id` | critical | AWS access key ID pattern in repo |
-| `aws/block-public-access-incomplete` | high | S3 bucket Block Public Access incomplete |
-| `aws/account-public-access-incomplete` | high | Account Block Public Access incomplete |
 | `azure/container-public-access` | high | Azure container blob/container public access |
 | `azure/account-public-access-enabled` | high | Storage account allowBlobPublicAccess enabled |
 | `gcs/iam-public-principal` | high | GCS bucket IAM binding for allUsers/allAuthenticatedUsers |

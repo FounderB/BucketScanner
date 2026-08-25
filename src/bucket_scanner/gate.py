@@ -126,7 +126,7 @@ def apply_gate(
     suppressions: list[Suppression],
     baseline_path: Path | None = None,
 ) -> ScanReport:
-    findings, suppressed_rows, _warnings = apply_suppressions(report.findings, suppressions)
+    findings, suppressed_rows, warnings = apply_suppressions(report.findings, suppressions)
     chains = compose_chains(report.buckets, findings)
 
     new_findings: list[Finding] = []
@@ -145,6 +145,7 @@ def apply_gate(
     if report.summary.scan_duration_ms is not None:
         summary.scan_duration_ms = report.summary.scan_duration_ms
 
+    merged_warnings = list(report.warnings) + warnings
     return report.model_copy(
         update={
             "findings": findings,
@@ -152,6 +153,7 @@ def apply_gate(
             "new_findings": new_findings,
             "new_chains": new_chains,
             "suppressed_findings": suppressed_rows,
+            "warnings": merged_warnings,
             "baseline_path": baseline_label,
             "summary": summary,
         }

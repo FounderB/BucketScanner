@@ -135,6 +135,24 @@ def test_compute_delta_new_findings():
     assert new_findings[0].rule_id == "encryption/disabled"
 
 
+def test_apply_gate_surfaces_suppression_expiry_warnings():
+    report = run_scan(folder_id=None, fixture=FIXTURE, config=ScanConfig())
+    soon = date.today() + timedelta(days=3)
+    gated = apply_gate(
+        report,
+        suppressions=[
+            Suppression(
+                rule="logging/disabled",
+                bucket="cdn-assets",
+                reason="accepted",
+                expires=soon,
+            )
+        ],
+    )
+    assert gated.warnings
+    assert any("expires in" in w for w in gated.warnings)
+
+
 def test_apply_gate_with_baseline(tmp_path: Path):
     report = run_scan(folder_id=None, fixture=FIXTURE, config=ScanConfig())
     baseline_path = tmp_path / "baseline.json"

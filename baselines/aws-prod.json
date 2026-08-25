@@ -1,13 +1,13 @@
 {
   "tool": "bucket-scanner",
   "report_schema": "1.0",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "cloud": "aws",
   "folder_id": "123456789012",
   "scope_ids": [
     "123456789012"
   ],
-  "scanned_at": "2026-08-25T16:59:49.716861Z",
+  "scanned_at": "2026-08-25T17:28:59.388450Z",
   "probe_enabled": false,
   "buckets": [
     {
@@ -176,24 +176,8 @@
           "IgnorePublicAcls": false,
           "BlockPublicPolicy": false,
           "RestrictPublicBuckets": false
-        }
-      },
-      "remediation": "Enable account-level S3 Block Public Access in AWS console or org policy."
-    },
-    {
-      "rule_id": "aws/account-public-access-incomplete",
-      "title": "Account-level Block Public Access incomplete",
-      "severity": "high",
-      "message": "AWS account does not enforce full Block Public Access.",
-      "bucket": "internal-logs-secure",
-      "resource": null,
-      "evidence": {
-        "account_public_access_block": {
-          "BlockPublicAcls": false,
-          "IgnorePublicAcls": false,
-          "BlockPublicPolicy": false,
-          "RestrictPublicBuckets": false
-        }
+        },
+        "account_id": "123456789012"
       },
       "remediation": "Enable account-level S3 Block Public Access in AWS console or org policy."
     },
@@ -206,7 +190,7 @@
       "resource": "deploy-bot",
       "evidence": {
         "age_days": 412,
-        "key_id": "AKIA\u202601"
+        "key_id": "AKIA…01"
       },
       "remediation": "Rotate static keys regularly and prefer short-lived IAM tokens."
     }
@@ -216,7 +200,7 @@
       "chain_id": "chain/silent-exfil",
       "title": "Silent exfil path",
       "severity": "critical",
-      "message": "Bucket 'prod-backups-open' is exposed while logging and versioning are off \u2014 exfiltration may go unnoticed and objects cannot be rolled back.",
+      "message": "Bucket 'prod-backups-open' is exposed while logging and versioning are off — exfiltration may go unnoticed and objects cannot be rolled back.",
       "rule_ids": [
         "acl/public-read",
         "logging/disabled",
@@ -230,16 +214,17 @@
   "new_findings": [],
   "new_chains": [],
   "suppressed_findings": [],
+  "warnings": [],
   "baseline_path": "baselines/aws-prod.json",
   "summary": {
-    "total": 9,
+    "total": 8,
     "critical": 1,
-    "high": 5,
+    "high": 4,
     "medium": 2,
     "low": 1,
     "info": 0,
     "chains": 1,
-    "score": 87,
+    "score": 77,
     "buckets_scanned": 2,
     "suppressed": 0,
     "new": 0,

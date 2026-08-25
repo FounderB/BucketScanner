@@ -2,6 +2,19 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [1.8.0] - 2026-08-25
+
+### Fixed (calibration)
+
+- `PUBLIC_RULES` no longer treats missing/incomplete BPA or Azure account allow-public as "public exposure" (false `chain/silent-exfil`)
+- AWS account BPA: AccessDenied → `aws/account-public-access-unknown` (not missing); emit once per account
+- Bucket BPA `partial_metadata` no longer skips account BPA checks
+- Azure/GCS: drop synthetic `acl/public-read` (native rules only); Azure logging unknown → partial, not "disabled"
+- GCS: record `google-managed` / `CMEK` encryption algorithm
+- `PROD_LIKE` no longer matches substrings like `product`
+- Fixture loader: `encryption_algorithm`, `object_lock_enabled`, `encryption_kms_key_id`
+- `scan_duration_ms` set on Azure/GCS/YC live paths; gate suppression expiry warnings on `report.warnings`
+
 ## [1.7.1] - 2026-08-25
 
 ### Fixed

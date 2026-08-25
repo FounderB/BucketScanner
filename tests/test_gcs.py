@@ -45,7 +45,7 @@ def test_gcs_fixture_finds_public_access_rules():
     assert "gcs/iam-public-principal" in rules
     assert "gcs/public-access-prevention-not-enforced" in rules
     assert "gcs/uniform-access-disabled" in rules
-    assert "acl/public-read" in rules
+    assert "acl/public-read" not in rules
 
 
 def test_run_scan_gcs_fixture():
