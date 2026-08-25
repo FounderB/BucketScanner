@@ -10,8 +10,9 @@ if [ -z "$root" ]; then
 fi
 
 cd "$root"
-chmod +x .githooks/pre-commit scripts/setup-git-hooks.sh
+chmod +x .githooks/pre-commit .githooks/prepare-commit-msg .githooks/commit-msg scripts/setup-git-hooks.sh
 git config core.hooksPath .githooks
 
 echo "Installed git hooks from .githooks/"
 echo "  - pre-commit: require FounderB author"
+echo "  - prepare-commit-msg / commit-msg: drop injected Co-authored-by trailers"
