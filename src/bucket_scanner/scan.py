@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -385,6 +386,7 @@ def run_scan(
     repo_path: Path | None = None,
     tracefuse_report: Path | None = None,
 ) -> ScanReport:
+    started = time.perf_counter()
     probe = config.probe
     ignore = config.ignore_buckets
     tf_path = terraform_path or config.terraform_path
@@ -534,6 +536,7 @@ def run_scan(
 
     scope_ids = [folder] if folder else []
     summary = _build_summary(findings, chains, buckets_scanned=len(buckets))
+    summary.scan_duration_ms = int((time.perf_counter() - started) * 1000)
     return ScanReport(
         version=__version__,
         cloud=report_cloud,

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections import Counter
+
 from bucket_scanner.models import ScanReport
 
 
@@ -36,6 +38,27 @@ def render_prometheus(report: ScanReport) -> str:
     for severity in ("critical", "high", "medium", "low", "info"):
         count = getattr(report.summary, severity)
         lines.append(f'bucket_scanner_findings_total{{{labels},severity="{severity}"}} {count}')
+
+    if report.summary.scan_duration_ms is not None:
+        lines.extend(
+            [
+                "# HELP bucket_scanner_scan_duration_ms Last scan wall time in milliseconds",
+                "# TYPE bucket_scanner_scan_duration_ms gauge",
+                f"bucket_scanner_scan_duration_ms{{{labels}}} {report.summary.scan_duration_ms}",
+            ]
+        )
+
+    by_rule = Counter(finding.rule_id for finding in report.findings)
+    lines.extend(
+        [
+            "# HELP bucket_scanner_findings_by_rule Findings counted by rule_id",
+            "# TYPE bucket_scanner_findings_by_rule gauge",
+        ]
+    )
+    for rule_id, count in sorted(by_rule.items()):
+        safe = rule_id.replace('"', '\\"')
+        lines.append(f'bucket_scanner_findings_by_rule{{{labels},rule_id="{safe}"}} {count}')
+
     for chain in report.chains:
         lines.extend(
             [

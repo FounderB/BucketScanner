@@ -27,7 +27,7 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::123456789012:role/bucket-scanner-oidc
           aws-region: eu-west-1
-      - uses: FounderB/BucketScanner/action@v1.5.0
+      - uses: FounderB/BucketScanner/action@v1.6.0
         with:
           profile: aws-prod
           config-path: .bucket-scanner.toml

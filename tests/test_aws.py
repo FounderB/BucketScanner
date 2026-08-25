@@ -150,6 +150,7 @@ def test_snapshot_bucket_aws_sets_bpa(mock_safe):
         (None, None),
         (None, "NoSuchLifecycleConfiguration"),
         (None, "NoSuchTagSet"),
+        (None, "ObjectLockConfigurationNotFoundError"),
         ({"PublicAccessBlockConfiguration": {"BlockPublicAcls": True}}, None),
     ]
     client = MagicMock()

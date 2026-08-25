@@ -65,10 +65,11 @@ def test_apply_suppressions_filters_matching_rule():
     suppressions = [
         Suppression(rule="logging/disabled", bucket="cdn-assets", reason="accepted"),
     ]
-    kept, count = apply_suppressions(findings, suppressions)
-    assert count == 1
+    kept, suppressed_rows, warnings = apply_suppressions(findings, suppressions)
+    assert len(suppressed_rows) == 1
     assert len(kept) == 1
     assert kept[0].rule_id == "encryption/disabled"
+    assert not warnings
 
 
 def test_suppression_expires():
@@ -84,9 +85,25 @@ def test_suppression_expires():
         bucket="b1",
         expires=date.today() - timedelta(days=1),
     )
-    kept, count = apply_suppressions([finding], [expired])
-    assert count == 0
+    kept, suppressed_rows, _warnings = apply_suppressions([finding], [expired])
+    assert len(suppressed_rows) == 0
     assert len(kept) == 1
+
+
+def test_suppression_glob_bucket():
+    finding = Finding(
+        rule_id="logging/disabled",
+        title="t",
+        severity=Severity.LOW,
+        message="m",
+        bucket="cdn-assets-prod",
+    )
+    kept, suppressed_rows, _ = apply_suppressions(
+        [finding],
+        [Suppression(rule="logging/disabled", bucket="cdn-*", reason="cdn fleet")],
+    )
+    assert len(kept) == 0
+    assert len(suppressed_rows) == 1
 
 
 def test_compute_delta_new_findings():

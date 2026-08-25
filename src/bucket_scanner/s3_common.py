@@ -18,6 +18,8 @@ _MISSING_CODES = {
     "NoSuchLifecycleConfiguration",
     "ServerSideEncryptionConfigurationNotFoundError",
     "NoSuchBucket",
+    "ObjectLockConfigurationNotFoundError",
+    "NoSuchPublicAccessBlockConfiguration",
 }
 
 
@@ -63,14 +65,18 @@ def snapshot_bucket(
         partial.append("policy")
 
     encryption_resp, enc_err = safe_s3_call(client, "get_bucket_encryption", Bucket=name)
-    encryption_enabled = bool(
-        encryption_resp
-        and encryption_resp.get("ServerSideEncryptionConfiguration", {}).get("Rules")
-    )
-    if enc_err and enc_err not in _MISSING_CODES:
+    encryption_enabled = False
+    encryption_algorithm: str | None = None
+    encryption_kms_key_id: str | None = None
+    if encryption_resp:
+        rules = encryption_resp.get("ServerSideEncryptionConfiguration", {}).get("Rules", [])
+        encryption_enabled = bool(rules)
+        if rules:
+            default = rules[0].get("ApplyServerSideEncryptionByDefault", {})
+            encryption_algorithm = default.get("SSEAlgorithm")
+            encryption_kms_key_id = default.get("KMSMasterKeyID")
+    elif enc_err and enc_err not in _MISSING_CODES:
         partial.append("encryption")
-        # Unknown — do not claim disabled.
-        encryption_enabled = False
 
     logging_resp, log_err = safe_s3_call(client, "get_bucket_logging", Bucket=name)
     logging_enabled = bool(
@@ -100,11 +106,23 @@ def snapshot_bucket(
     elif tags_err and tags_err not in _MISSING_CODES:
         partial.append("tags")
 
+    object_lock_enabled: bool | None = None
+    lock_resp, lock_err = safe_s3_call(client, "get_object_lock_configuration", Bucket=name)
+    if lock_resp:
+        cfg = lock_resp.get("ObjectLockConfiguration") or {}
+        object_lock_enabled = str(cfg.get("ObjectLockEnabled", "")).upper() == "ENABLED"
+    elif lock_err == "ObjectLockConfigurationNotFoundError":
+        object_lock_enabled = False
+    elif lock_err and lock_err not in _MISSING_CODES:
+        partial.append("object_lock")
+
     block_public_access = None
     if cloud == CloudProvider.AWS:
         bpa_resp, bpa_err = safe_s3_call(client, "get_public_access_block", Bucket=name)
         if bpa_resp:
             block_public_access = bpa_resp.get("PublicAccessBlockConfiguration", {})
+        elif bpa_err == "NoSuchPublicAccessBlockConfiguration":
+            block_public_access = None
         elif bpa_err and bpa_err not in _MISSING_CODES:
             partial.append("block_public_access")
 
@@ -116,6 +134,9 @@ def snapshot_bucket(
         acl=acl,
         policy=policy,
         encryption_enabled=encryption_enabled,
+        encryption_algorithm=encryption_algorithm,
+        encryption_kms_key_id=encryption_kms_key_id,
+        object_lock_enabled=object_lock_enabled,
         logging_enabled=logging_enabled,
         versioning_enabled=versioning_enabled,
         lifecycle_rules=lifecycle_rules,

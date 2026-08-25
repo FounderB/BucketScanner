@@ -43,6 +43,29 @@ def render_human(report: ScanReport, console: Console | None = None) -> None:
         out.print(f"  CHAINS {report.summary.chains}", style="bold red")
     if report.summary.suppressed:
         out.print(f"  SUPPRESSED {report.summary.suppressed}", style="dim")
+        for row in report.suppressed_findings[:10]:
+            expiry = f" expires {row.expires}" if row.expires else ""
+            out.print(
+                f"    · {row.finding.rule_id} @ {row.finding.bucket or '*'} "
+                f"— {row.reason or 'no reason'}{expiry}",
+                style="dim",
+            )
+        soon = [row for row in report.suppressed_findings if row.expires]
+        # Surface nearing expiry in human output
+        from datetime import UTC, date, datetime
+
+        today = datetime.now(tz=UTC).date()
+        for row in soon:
+            try:
+                exp = date.fromisoformat(row.expires)
+            except ValueError:
+                continue
+            days = (exp - today).days
+            if 0 <= days <= 14:
+                out.print(
+                    f"  ! Suppression expires in {days}d: {row.finding.rule_id}",
+                    style="yellow",
+                )
     if report.baseline_path:
         out.print(
             f"  NEW vs baseline {report.summary.new}  ({report.baseline_path})",
