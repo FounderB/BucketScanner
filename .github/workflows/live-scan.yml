@@ -48,16 +48,28 @@ jobs:
             proofs/fp-log-ci.jsonl
 
   live-yc:
-    if: ${{ secrets.YC_TOKEN != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Detect YC credentials
+        id: creds
+        env:
+          YC_TOKEN: ${{ secrets.YC_TOKEN }}
+        run: |
+          if [ -n "$YC_TOKEN" ]; then
+            echo "has_yc=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_yc=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::YC_TOKEN not set — skipping live YC scan (fixture smoke still runs)"
+          fi
       - name: Use prod config if present
+        if: steps.creds.outputs.has_yc == 'true'
         run: |
           if [ ! -f .bucket-scanner.toml ]; then
             cp examples/ci/.bucket-scanner.prod.toml.example .bucket-scanner.toml
           fi
       - uses: ./action
+        if: steps.creds.outputs.has_yc == 'true'
         with:
           profile: ${{ github.event.inputs.profile || 'yc-prod' }}
           config-path: .bucket-scanner.toml
@@ -72,7 +84,7 @@ jobs:
           YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
         continue-on-error: true
       - name: Update proof log from live report
-        if: always()
+        if: steps.creds.outputs.has_yc == 'true' && always()
         run: |
           if [ ! -f bucket-scanner.json ]; then
             echo "No live JSON report; skip proof-log"
@@ -82,7 +94,7 @@ jobs:
           bucket-scanner proof-log update --report bucket-scanner.json --log proofs/fp-log-live.jsonl
           bucket-scanner proof-log summary --log proofs/fp-log-live.jsonl
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: steps.creds.outputs.has_yc == 'true' && always()
         with:
           name: live-scan-report
           path: |
