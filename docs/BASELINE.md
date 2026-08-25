@@ -71,7 +71,7 @@ Suppressions apply before baseline comparison and recompose chains on remaining 
 ## GitHub Action
 
 ```yaml
-- uses: FounderB/BucketScanner/action@v1.7.0
+- uses: FounderB/BucketScanner/action@v1.7.1
   with:
     profile: yc-prod
     fail-on: new

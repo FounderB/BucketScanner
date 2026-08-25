@@ -2,6 +2,12 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [1.7.1] - 2026-08-25
+
+### Fixed
+
+- SARIF artifact URIs use repo-relative `buckets/<cloud>/<name>` paths so GitHub Code Scanning accepts Azure/GCS/YC uploads (no custom `azure://` schemes)
+
 ## [1.7.0] - 2026-08-25
 
 ### Added (ops product)
