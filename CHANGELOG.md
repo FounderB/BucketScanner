@@ -2,6 +2,12 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [1.8.1] - 2026-08-25
+
+### Fixed
+
+- `scan_duration_ms` no longer truncates sub-millisecond fixture/live scans to `0` (floor at 1 ms)
+
 ## [1.8.0] - 2026-08-25
 
 ### Fixed (calibration)
