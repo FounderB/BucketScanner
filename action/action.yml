@@ -2,7 +2,7 @@ name: "Scan with Bucket Scanner"
 description: "Run Bucket Scanner against Yandex Cloud, AWS S3, Azure Blob, or GCS using CLI flags or named scan profiles"
 inputs:
   version:
-    description: "Install bucket-scanner from PyPI at this version (e.g. 1.6.0)"
+    description: "Install bucket-scanner from PyPI at this version (e.g. 1.7.0)"
     required: false
     default: ""
   cloud:

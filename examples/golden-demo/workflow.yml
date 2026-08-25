@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: FounderB/BucketScanner/action@v1.6.0
+      - uses: FounderB/BucketScanner/action@v1.7.0
         with:
-          version: "1.6.0"
+          version: "1.7.0"
           profile: yc-fixture
           config-path: examples/ci/.bucket-scanner.toml
           fail-on: high

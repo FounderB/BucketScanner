@@ -1,13 +1,13 @@
 {
   "tool": "bucket-scanner",
   "report_schema": "1.0",
-  "version": "1.1.0",
+  "version": "1.7.0",
   "cloud": "aws",
   "folder_id": "123456789012",
   "scope_ids": [
     "123456789012"
   ],
-  "scanned_at": "2026-08-23T12:20:00.139797Z",
+  "scanned_at": "2026-08-25T16:59:49.716861Z",
   "probe_enabled": false,
   "buckets": [
     {
@@ -18,12 +18,20 @@
       "acl": "public-read",
       "policy": null,
       "encryption_enabled": false,
+      "encryption_algorithm": null,
+      "encryption_kms_key_id": null,
+      "object_lock_enabled": null,
       "logging_enabled": false,
       "versioning_enabled": false,
       "lifecycle_rules": [],
       "anonymous_listable": null,
       "anonymous_readable": null,
+      "probe_evidence": {},
+      "anonymous_access_flags": null,
+      "website_enabled": false,
+      "cors_rules": [],
       "metadata_known": true,
+      "partial_metadata": [],
       "block_public_access": {
         "BlockPublicAcls": false,
         "IgnorePublicAcls": false,
@@ -36,7 +44,8 @@
         "BlockPublicPolicy": false,
         "RestrictPublicBuckets": false
       },
-      "tags": {}
+      "tags": {},
+      "auth_mode": null
     },
     {
       "name": "internal-logs-secure",
@@ -46,12 +55,20 @@
       "acl": "private",
       "policy": null,
       "encryption_enabled": true,
+      "encryption_algorithm": null,
+      "encryption_kms_key_id": null,
+      "object_lock_enabled": null,
       "logging_enabled": true,
       "versioning_enabled": true,
       "lifecycle_rules": [],
       "anonymous_listable": null,
       "anonymous_readable": null,
+      "probe_evidence": {},
+      "anonymous_access_flags": null,
+      "website_enabled": false,
+      "cors_rules": [],
       "metadata_known": true,
+      "partial_metadata": [],
       "block_public_access": {
         "BlockPublicAcls": true,
         "IgnorePublicAcls": true,
@@ -64,7 +81,8 @@
         "BlockPublicPolicy": false,
         "RestrictPublicBuckets": false
       },
-      "tags": {}
+      "tags": {},
+      "auth_mode": null
     }
   ],
   "findings": [
@@ -188,7 +206,7 @@
       "resource": "deploy-bot",
       "evidence": {
         "age_days": 412,
-        "key_id": "AKIA…01"
+        "key_id": "AKIA\u202601"
       },
       "remediation": "Rotate static keys regularly and prefer short-lived IAM tokens."
     }
@@ -198,7 +216,7 @@
       "chain_id": "chain/silent-exfil",
       "title": "Silent exfil path",
       "severity": "critical",
-      "message": "Bucket 'prod-backups-open' is exposed while logging and versioning are off — exfiltration may go unnoticed and objects cannot be rolled back.",
+      "message": "Bucket 'prod-backups-open' is exposed while logging and versioning are off \u2014 exfiltration may go unnoticed and objects cannot be rolled back.",
       "rule_ids": [
         "acl/public-read",
         "logging/disabled",
@@ -211,7 +229,8 @@
   ],
   "new_findings": [],
   "new_chains": [],
-  "baseline_path": null,
+  "suppressed_findings": [],
+  "baseline_path": "baselines/aws-prod.json",
   "summary": {
     "total": 9,
     "critical": 1,
@@ -223,7 +242,8 @@
     "score": 87,
     "buckets_scanned": 2,
     "suppressed": 0,
-    "new": 0
+    "new": 0,
+    "scan_duration_ms": 0
   },
   "method": "fixture"
 }
