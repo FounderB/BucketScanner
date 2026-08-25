@@ -16,14 +16,17 @@ YC_REGION = "ru-central1"
 
 def build_s3_client(credentials: Credentials) -> BaseClient:
     if not credentials.access_key_id or not credentials.secret_access_key:
-        raise ValueError("Static access keys are required for S3 metadata calls.")
-    return boto3.client(
-        "s3",
-        endpoint_url=YC_S3_ENDPOINT,
-        region_name=YC_REGION,
-        aws_access_key_id=credentials.access_key_id,
-        aws_secret_access_key=credentials.secret_access_key,
-    )
+        raise ValueError("Access keys are required for S3 metadata calls.")
+    client_kwargs: dict = {
+        "service_name": "s3",
+        "endpoint_url": YC_S3_ENDPOINT,
+        "region_name": YC_REGION,
+        "aws_access_key_id": credentials.access_key_id,
+        "aws_secret_access_key": credentials.secret_access_key,
+    }
+    if credentials.session_token:
+        client_kwargs["aws_session_token"] = credentials.session_token
+    return boto3.client(**client_kwargs)
 
 
 def snapshot_yandex_bucket(

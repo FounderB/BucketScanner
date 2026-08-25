@@ -67,10 +67,15 @@ class BucketSnapshot(BaseModel):
     lifecycle_rules: list[dict[str, Any]] = Field(default_factory=list)
     anonymous_listable: bool | None = None
     anonymous_readable: bool | None = None
+    anonymous_access_flags: dict[str, bool] | None = None
+    website_enabled: bool = False
+    cors_rules: list[dict[str, Any]] = Field(default_factory=list)
     metadata_known: bool = True
+    partial_metadata: list[str] = Field(default_factory=list)
     block_public_access: dict[str, Any] | None = None
     account_public_access_block: dict[str, Any] | None = None
     tags: dict[str, str] = Field(default_factory=dict)
+    auth_mode: str | None = None  # static-keys | ephemeral | management-only
 
 
 class ServiceAccountKeySnapshot(BaseModel):

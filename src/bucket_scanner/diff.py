@@ -88,7 +88,12 @@ def diff_terraform(
                     remediation="Reconcile Terraform and live ACL/policy before next deploy.",
                 )
             )
-        elif intent.acl and live_acl not in {"unknown", live_acl} and live_acl in PUBLIC_ACLS:
+        elif (
+            intent.acl
+            and declared_acl not in {"private", ""}
+            and live_acl not in {"unknown", declared_acl}
+            and live_acl in PUBLIC_ACLS
+        ):
             findings.append(
                 Finding(
                     rule_id="iac/acl-drift",
@@ -108,10 +113,45 @@ def diff_terraform(
                 )
             )
 
+        findings.extend(_check_yc_anonymous_drift(intent, live_bucket))
         findings.extend(_check_bpa_drift(intent, live_bucket, terraform_path))
         findings.extend(_check_azure_drift(intent, live_bucket))
         findings.extend(_check_gcs_drift(intent, live_bucket))
 
+    return findings
+
+
+def _check_yc_anonymous_drift(intent, live_bucket: BucketSnapshot) -> list[Finding]:
+    if live_bucket.cloud != "yandex":
+        return []
+    declared = intent.anonymous_access_flags or {}
+    live = live_bucket.anonymous_access_flags or {}
+    if not declared and not live:
+        return []
+    findings: list[Finding] = []
+    for flag in ("read", "list", "config_read"):
+        want = bool(declared.get(flag, False))
+        got = bool(live.get(flag, False))
+        if not want and got:
+            findings.append(
+                Finding(
+                    rule_id="iac/yc-anonymous-drift",
+                    title="Yandex anonymous access flag drift",
+                    severity=Severity.CRITICAL,
+                    message=(
+                        f"Terraform keeps anonymous {flag}=false for '{intent.bucket}' "
+                        f"but live flag is enabled."
+                    ),
+                    bucket=intent.bucket,
+                    evidence={
+                        "flag": flag,
+                        "declared": want,
+                        "live": got,
+                        "source_file": intent.source_file,
+                    },
+                    remediation="Disable anonymous_access_flags in console or apply Terraform.",
+                )
+            )
     return findings
 
 

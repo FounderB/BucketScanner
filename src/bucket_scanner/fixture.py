@@ -29,9 +29,12 @@ def load_fixture(path: Path) -> tuple[str, list[BucketSnapshot], list[ServiceAcc
                 policy=item.get("policy"),
                 anonymous_listable=item.get("anonymous_listable"),
                 anonymous_readable=item.get("anonymous_readable"),
+                anonymous_access_flags=item.get("anonymous_access_flags"),
                 block_public_access=item.get("block_public_access"),
                 account_public_access_block=item.get("account_public_access_block", account_bpa),
                 tags=item.get("tags", {}),
+                partial_metadata=item.get("partial_metadata", []),
+                metadata_known=item.get("metadata_known", True),
             )
         )
 

@@ -1,0 +1,30 @@
+{
+  "buckets": [
+    {
+      "id": "bucket-public-assets",
+      "name": "bucket-public-assets",
+      "folderId": "b1gFOLDEREXAMPLE",
+      "defaultStorageClass": "STANDARD",
+      "versioning": "VERSIONING_DISABLED",
+      "anonymousAccessFlags": {
+        "read": true,
+        "list": false,
+        "configRead": true
+      },
+      "createdAt": "2024-01-15T10:00:00Z"
+    },
+    {
+      "id": "bucket-private-logs",
+      "name": "bucket-private-logs",
+      "folderId": "b1gFOLDEREXAMPLE",
+      "defaultStorageClass": "COLD",
+      "versioning": "VERSIONING_ENABLED",
+      "anonymousAccessFlags": {
+        "read": false,
+        "list": false,
+        "configRead": false
+      },
+      "createdAt": "2024-03-01T08:30:00Z"
+    }
+  ]
+}

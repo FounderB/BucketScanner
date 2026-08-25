@@ -523,8 +523,7 @@ def chain(
         raise SystemExit(0)
     for finding in findings:
         console.print(
-            f"[bold]{finding.severity.value.upper()}[/bold] "
-            f"{finding.rule_id}: {finding.message}"
+            f"[bold]{finding.severity.value.upper()}[/bold] {finding.rule_id}: {finding.message}"
         )
     raise SystemExit(0)
 
@@ -656,9 +655,7 @@ def profiles_list(config_path: Path | None) -> None:
         profile = app_config.profiles[name]
         scope = ",".join(profile.folder_ids) if profile.folder_ids else profile.folder_id or "-"
         fixture = str(profile.fixture) if profile.fixture else "-"
-        console.print(
-            f"{name}  cloud={profile.cloud.value}  scope={scope}  fixture={fixture}"
-        )
+        console.print(f"{name}  cloud={profile.cloud.value}  scope={scope}  fixture={fixture}")
     raise SystemExit(0)
 
 

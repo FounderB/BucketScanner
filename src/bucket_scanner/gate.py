@@ -76,9 +76,7 @@ def compute_delta(
     new_findings = [
         item for item in report.findings if finding_fingerprint(item) not in baseline_findings
     ]
-    new_chains = [
-        item for item in report.chains if chain_fingerprint(item) not in baseline_chains
-    ]
+    new_chains = [item for item in report.chains if chain_fingerprint(item) not in baseline_chains]
     return new_findings, new_chains
 
 

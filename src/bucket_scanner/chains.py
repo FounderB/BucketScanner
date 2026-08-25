@@ -10,6 +10,8 @@ PUBLIC_RULES = {
     "probe/anonymous-list",
     "probe/anonymous-read-confirmed",
     "policy/overly-permissive",
+    "yc/anonymous-read-enabled",
+    "yc/anonymous-list-enabled",
 }
 SECRET_RULES = {
     "secrets/yc-env-var",

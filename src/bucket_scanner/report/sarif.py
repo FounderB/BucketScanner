@@ -49,9 +49,7 @@ def render_sarif(report: ScanReport) -> dict:
             "locations": [
                 {
                     "physicalLocation": {
-                        "artifactLocation": {
-                            "uri": _artifact_uri(report, finding.bucket)
-                        }
+                        "artifactLocation": {"uri": _artifact_uri(report, finding.bucket)}
                     }
                 }
             ],

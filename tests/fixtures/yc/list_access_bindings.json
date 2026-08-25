@@ -1,0 +1,18 @@
+{
+  "accessBindings": [
+    {
+      "roleId": "storage.admin",
+      "subject": {
+        "id": "ajeserviceaccount01",
+        "type": "serviceAccount"
+      }
+    },
+    {
+      "roleId": "storage.viewer",
+      "subject": {
+        "id": "ajeserviceaccount02",
+        "type": "serviceAccount"
+      }
+    }
+  ]
+}

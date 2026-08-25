@@ -1,0 +1,11 @@
+{
+  "accessKeys": [
+    {
+      "id": "ajeaccesskey01",
+      "serviceAccountId": "ajeserviceaccount01",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "description": "legacy-ci-key",
+      "keyId": "YCAJexampleKeyId01"
+    }
+  ]
+}

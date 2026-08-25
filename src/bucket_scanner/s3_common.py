@@ -11,12 +11,31 @@ from botocore.exceptions import ClientError
 from bucket_scanner.cloud import CloudProvider
 from bucket_scanner.models import BucketSnapshot
 
+# Errors that mean "feature not configured" rather than AccessDenied.
+_MISSING_CODES = {
+    "NoSuchBucketPolicy",
+    "NoSuchTagSet",
+    "NoSuchLifecycleConfiguration",
+    "ServerSideEncryptionConfigurationNotFoundError",
+    "NoSuchBucket",
+}
 
-def safe_s3_call(client: BaseClient, method: str, **kwargs: Any) -> dict[str, Any] | None:
+
+def safe_s3_call(
+    client: BaseClient,
+    method: str,
+    **kwargs: Any,
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Call an S3 API method.
+
+    Returns ``(response, error_code)``.
+    ``error_code`` is set on ClientError (AccessDenied, NoSuch*, …).
+    """
     try:
-        return getattr(client, method)(**kwargs)
-    except ClientError:
-        return None
+        return getattr(client, method)(**kwargs), None
+    except ClientError as exc:
+        code = exc.response.get("Error", {}).get("Code", "ClientError")
+        return None, code
 
 
 def snapshot_bucket(
@@ -27,45 +46,67 @@ def snapshot_bucket(
     scope_id: str | None = None,
     region: str | None = None,
 ) -> BucketSnapshot:
-    acl_resp = safe_s3_call(client, "get_bucket_acl", Bucket=name)
+    partial: list[str] = []
+
+    acl_resp, acl_err = safe_s3_call(client, "get_bucket_acl", Bucket=name)
     acl = None
     if acl_resp:
         acl = classify_acl(acl_resp.get("Grants", []))
+    elif acl_err and acl_err not in _MISSING_CODES:
+        partial.append("acl")
 
-    policy_resp = safe_s3_call(client, "get_bucket_policy", Bucket=name)
+    policy_resp, policy_err = safe_s3_call(client, "get_bucket_policy", Bucket=name)
     policy = None
     if policy_resp and policy_resp.get("Policy"):
         policy = json.loads(policy_resp["Policy"])
+    elif policy_err and policy_err not in _MISSING_CODES:
+        partial.append("policy")
 
-    encryption_resp = safe_s3_call(client, "get_bucket_encryption", Bucket=name)
+    encryption_resp, enc_err = safe_s3_call(client, "get_bucket_encryption", Bucket=name)
     encryption_enabled = bool(
         encryption_resp
         and encryption_resp.get("ServerSideEncryptionConfiguration", {}).get("Rules")
     )
+    if enc_err and enc_err not in _MISSING_CODES:
+        partial.append("encryption")
+        # Unknown — do not claim disabled.
+        encryption_enabled = False
 
-    logging_resp = safe_s3_call(client, "get_bucket_logging", Bucket=name)
+    logging_resp, log_err = safe_s3_call(client, "get_bucket_logging", Bucket=name)
     logging_enabled = bool(
         logging_resp and logging_resp.get("LoggingEnabled", {}).get("TargetBucket")
     )
+    if log_err and log_err not in _MISSING_CODES:
+        partial.append("logging")
 
-    versioning_resp = safe_s3_call(client, "get_bucket_versioning", Bucket=name)
+    versioning_resp, ver_err = safe_s3_call(client, "get_bucket_versioning", Bucket=name)
     versioning_enabled = versioning_resp is not None and versioning_resp.get("Status") == "Enabled"
+    if ver_err and ver_err not in _MISSING_CODES:
+        partial.append("versioning")
 
-    lifecycle_resp = safe_s3_call(client, "get_bucket_lifecycle_configuration", Bucket=name)
+    lifecycle_resp, life_err = safe_s3_call(
+        client, "get_bucket_lifecycle_configuration", Bucket=name
+    )
     lifecycle_rules: list[dict[str, Any]] = []
     if lifecycle_resp:
         lifecycle_rules = lifecycle_resp.get("Rules", [])
+    elif life_err and life_err not in _MISSING_CODES:
+        partial.append("lifecycle")
 
-    tags_resp = safe_s3_call(client, "get_bucket_tagging", Bucket=name)
+    tags_resp, tags_err = safe_s3_call(client, "get_bucket_tagging", Bucket=name)
     tags: dict[str, str] = {}
     if tags_resp:
         tags = {item["Key"]: item["Value"] for item in tags_resp.get("TagSet", [])}
+    elif tags_err and tags_err not in _MISSING_CODES:
+        partial.append("tags")
 
     block_public_access = None
     if cloud == CloudProvider.AWS:
-        bpa_resp = safe_s3_call(client, "get_public_access_block", Bucket=name)
+        bpa_resp, bpa_err = safe_s3_call(client, "get_public_access_block", Bucket=name)
         if bpa_resp:
             block_public_access = bpa_resp.get("PublicAccessBlockConfiguration", {})
+        elif bpa_err and bpa_err not in _MISSING_CODES:
+            partial.append("block_public_access")
 
     return BucketSnapshot(
         name=name,
@@ -80,17 +121,25 @@ def snapshot_bucket(
         lifecycle_rules=lifecycle_rules,
         tags=tags,
         block_public_access=block_public_access,
+        partial_metadata=partial,
     )
 
 
 def classify_acl(grants: list[dict[str, Any]]) -> str:
+    has_public_read = False
+    has_public_write = False
     for grant in grants:
         grantee = grant.get("Grantee", {})
         uri = grantee.get("URI", "")
         permission = grant.get("Permission", "")
-        if "AllUsers" in uri or "AuthenticatedUsers" in uri:
-            if permission in {"READ", "FULL_CONTROL"}:
-                return "public-read"
-            if permission == "WRITE":
-                return "public-read-write"
+        if "AllUsers" not in uri and "AuthenticatedUsers" not in uri:
+            continue
+        if permission in {"WRITE", "WRITE_ACP", "FULL_CONTROL"}:
+            has_public_write = True
+        if permission in {"READ", "READ_ACP", "FULL_CONTROL"}:
+            has_public_read = True
+    if has_public_write:
+        return "public-read-write"
+    if has_public_read:
+        return "public-read"
     return "private"

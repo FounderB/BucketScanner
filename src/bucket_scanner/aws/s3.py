@@ -54,7 +54,7 @@ def list_bucket_names(client: BaseClient) -> list[str]:
 
 
 def resolve_bucket_region(client: BaseClient, bucket_name: str, *, default: str) -> str:
-    response = safe_s3_call(client, "get_bucket_location", Bucket=bucket_name)
+    response, _err = safe_s3_call(client, "get_bucket_location", Bucket=bucket_name)
     if not response:
         return default
     location = response.get("LocationConstraint")
@@ -80,7 +80,7 @@ def get_account_public_access_block(
         if credentials.session_token:
             client_kwargs["aws_session_token"] = credentials.session_token
     control = session.client("s3control", **client_kwargs)
-    response = safe_s3_call(control, "get_public_access_block", AccountId=account_id)
+    response, _err = safe_s3_call(control, "get_public_access_block", AccountId=account_id)
     if not response:
         return None
     return response.get("PublicAccessBlockConfiguration")

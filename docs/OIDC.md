@@ -51,18 +51,24 @@ steps:
 2. Workload Identity Pool + Provider for GitHub OIDC  
 3. `google-github-actions/auth@v2` — see [workflow-gcs-oidc.yml](../examples/ci/workflow-gcs-oidc.yml)
 
-## Yandex Cloud (IAM token)
+## Yandex Cloud (IAM token — no static S3 keys)
 
 YC has no GitHub OIDC first-party flow in Bucket Scanner today. Recommended:
 
 - Short-lived `YC_TOKEN` from CI secret (rotate via your secret manager)  
-- Or scan from a trusted runner inside YC with metadata credentials  
+- **Do not store `YC_ACCESS_KEY_*` in CI** — with only an IAM token the scanner:
+  1. Mints **ephemeral** AWS-compatible S3 credentials (`CreateEphemeralAccessKey`)
+  2. Falls back to Storage **Bucket.Get** (`VIEW_FULL`) for ACL/policy/CORS/website when ephemeral mint fails
 
 ```yaml
 env:
   YC_TOKEN: ${{ secrets.YC_TOKEN }}
   YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+  # YC_ACCESS_KEY_ID / YC_SECRET_ACCESS_KEY intentionally omitted
 ```
+
+SA needs `storage.viewer` (or higher) on the folder plus permission to create ephemeral keys
+(`iam.serviceAccounts.ephemeralAccessKeyAdmin` or equivalent) when you want full S3 metadata.
 
 Run `bucket-scanner doctor --cloud yandex --json` as first CI step when `run-doctor: true` on the Action.
 

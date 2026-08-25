@@ -58,6 +58,41 @@ RULES: dict[str, dict[str, str]] = {
         "why": "ACL says private but anonymous requests succeed — policy or CDN origin leak.",
         "fix": "Inspect bucket policy, public access blocks, and CDN origin configuration.",
     },
+    "yc/anonymous-read-enabled": {
+        "title": "Yandex anonymous read",
+        "why": "Storage API anonymousAccessFlags.read allows unauthenticated object reads.",
+        "fix": "Set anonymous_access_flags.read = false and re-scan with IAM token.",
+    },
+    "yc/anonymous-list-enabled": {
+        "title": "Yandex anonymous list",
+        "why": "Anyone can enumerate objects via anonymous ListObjects.",
+        "fix": "Disable anonymous list; use IAM or pre-signed URLs.",
+    },
+    "yc/anonymous-config-read-enabled": {
+        "title": "Yandex anonymous config read",
+        "why": "Bucket configuration is readable without credentials.",
+        "fix": "Disable anonymousAccessFlags.configRead.",
+    },
+    "yc/website-enabled": {
+        "title": "Yandex website hosting",
+        "why": "Static website endpoint can expose objects outside the S3 API path.",
+        "fix": "Disable website hosting unless intentionally public; use CDN for public sites.",
+    },
+    "yc/cors-enabled": {
+        "title": "Yandex CORS configured",
+        "why": "Broad CORS origins let browsers fetch objects from untrusted pages.",
+        "fix": "Restrict AllowedOrigins; avoid '*' on sensitive buckets.",
+    },
+    "metadata/partial": {
+        "title": "Partial metadata",
+        "why": "Scanner lacked permission for some S3 APIs — findings may be incomplete.",
+        "fix": "Grant read access to ACL, policy, encryption, and logging APIs.",
+    },
+    "iac/yc-anonymous-drift": {
+        "title": "Yandex anonymous flag drift",
+        "why": "Terraform declares anonymous flags off but live bucket enables them.",
+        "fix": "Apply Terraform or disable flags in the console.",
+    },
     "iac/acl-drift": {
         "title": "Terraform ACL drift",
         "why": "Infrastructure code says one thing; live bucket ACL says another.",
@@ -155,8 +190,7 @@ RULES: dict[str, dict[str, str]] = {
         "title": "Silent exfil chain",
         "why": "Public exposure + no logs + no versioning = undetected, irreversible data loss.",
         "fix": (
-            "Close public access first, then enable logging and versioning "
-            "before closing ticket."
+            "Close public access first, then enable logging and versioning before closing ticket."
         ),
     },
 }
