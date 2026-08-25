@@ -18,6 +18,13 @@ SARIF_SEVERITY = {
 
 
 def _artifact_uri(report: ScanReport, bucket: str | None) -> str:
+    """GitHub Code Scanning requires file:// or relative paths — not custom schemes."""
+    target = bucket or report.folder_id or "scope"
+    safe = "".join(ch if ch.isalnum() or ch in "-_." else "_" for ch in target)
+    return f"buckets/{report.cloud}/{safe}"
+
+
+def _resource_id(report: ScanReport, bucket: str | None) -> str:
     target = bucket or report.folder_id
     if report.cloud == "aws":
         return f"arn:aws:s3:::{target}"
@@ -42,6 +49,9 @@ def render_sarif(report: ScanReport) -> dict:
             "defaultConfiguration": {"level": SARIF_SEVERITY[finding.severity]},
             "properties": rule_props,
         }
+        result_props = {"tags": rule_props.get("tags", ["security"])}
+        result_props["cloud"] = report.cloud
+        result_props["resource"] = _resource_id(report, finding.bucket)
         result: dict = {
             "ruleId": finding.rule_id,
             "level": SARIF_SEVERITY[finding.severity],
@@ -49,13 +59,15 @@ def render_sarif(report: ScanReport) -> dict:
             "locations": [
                 {
                     "physicalLocation": {
-                        "artifactLocation": {"uri": _artifact_uri(report, finding.bucket)}
+                        "artifactLocation": {
+                            "uri": _artifact_uri(report, finding.bucket),
+                        },
+                        "region": {"startLine": 1},
                     }
                 }
             ],
+            "properties": result_props,
         }
-        if rule_props.get("tags"):
-            result["properties"] = {"tags": rule_props["tags"]}
         results.append(result)
 
     for chain in report.chains:
@@ -72,9 +84,24 @@ def render_sarif(report: ScanReport) -> dict:
             "ruleId": chain.chain_id,
             "level": SARIF_SEVERITY[chain.severity],
             "message": {"text": chain.message},
+            "locations": [
+                {
+                    "physicalLocation": {
+                        "artifactLocation": {
+                            "uri": _artifact_uri(
+                                report, chain.buckets[0] if chain.buckets else None
+                            ),
+                        },
+                        "region": {"startLine": 1},
+                    }
+                }
+            ],
+            "properties": {
+                "tags": rule_props.get("tags", ["security"]),
+                "cloud": report.cloud,
+                "buckets": chain.buckets,
+            },
         }
-        if rule_props.get("tags"):
-            chain_result["properties"] = {"tags": rule_props["tags"]}
         results.append(chain_result)
 
     return {

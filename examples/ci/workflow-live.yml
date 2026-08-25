@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: FounderB/BucketScanner/action@v1.7.0
+      - uses: FounderB/BucketScanner/action@v1.7.1
         with:
           profile: ${{ github.event.inputs.profile || 'yc-prod' }}
           config-path: .bucket-scanner.toml

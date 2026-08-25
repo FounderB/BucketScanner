@@ -5,7 +5,7 @@ Goal: **fixture scan → SARIF → CI baseline gate** with zero cloud secrets.
 ## 1. Install
 
 ```bash
-pip install bucket-scanner==1.7.0
+pip install bucket-scanner==1.7.1
 bucket-scanner --version
 ```
 
@@ -39,9 +39,9 @@ Upload `/tmp/report.sarif` to GitHub Code Scanning.
 ## 4. GitHub Action (fixture profile)
 
 ```yaml
-  - uses: FounderB/BucketScanner/action@v1.7.0
+  - uses: FounderB/BucketScanner/action@v1.7.1
     with:
-      version: "1.7.0"
+      version: "1.7.1"
       profile: yc-fixture
       config-path: examples/ci/.bucket-scanner.toml
       fail-on: high
