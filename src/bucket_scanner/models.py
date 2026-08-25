@@ -126,6 +126,7 @@ class ScanReport(BaseModel):
     new_findings: list[Finding] = Field(default_factory=list)
     new_chains: list[ChainFinding] = Field(default_factory=list)
     suppressed_findings: list[SuppressedFinding] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
     baseline_path: str | None = None
     summary: ScanSummary = Field(default_factory=ScanSummary)
     method: str = "metadata"

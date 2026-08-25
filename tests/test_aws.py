@@ -122,7 +122,25 @@ def test_get_account_public_access_block(mock_safe):
     credentials.access_key_id = None
     credentials.secret_access_key = None
     result = get_account_public_access_block(credentials, "123456789012")
-    assert result == {"BlockPublicAcls": True}
+    assert result == ({"BlockPublicAcls": True}, "ok")
+
+
+@patch("bucket_scanner.aws.s3.safe_s3_call")
+def test_get_account_public_access_block_missing(mock_safe):
+    mock_safe.return_value = (None, "NoSuchPublicAccessBlockConfiguration")
+    credentials = MagicMock(profile=None, region="us-east-1")
+    credentials.access_key_id = None
+    credentials.secret_access_key = None
+    assert get_account_public_access_block(credentials, "123") == (None, "missing")
+
+
+@patch("bucket_scanner.aws.s3.safe_s3_call")
+def test_get_account_public_access_block_unknown(mock_safe):
+    mock_safe.return_value = (None, "AccessDenied")
+    credentials = MagicMock(profile=None, region="us-east-1")
+    credentials.access_key_id = None
+    credentials.secret_access_key = None
+    assert get_account_public_access_block(credentials, "123") == (None, "unknown")
 
 
 @patch("bucket_scanner.aws.s3.snapshot_bucket")
@@ -192,7 +210,7 @@ def test_live_aws_scan_with_mocks(
     mock_names.return_value = ["demo"]
     mock_account.return_value = "123456789012"
     mock_region.return_value = "eu-west-1"
-    mock_bpa.return_value = {"BlockPublicAcls": False}
+    mock_bpa.return_value = ({"BlockPublicAcls": False}, "ok")
     mock_snapshot.return_value = BucketSnapshot(
         name="demo",
         cloud="aws",

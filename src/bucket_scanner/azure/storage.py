@@ -59,8 +59,16 @@ def snapshot_azure_container(
     account_allow_blob_public_access: bool | None,
     encryption_enabled: bool,
     versioning_enabled: bool,
+    logging_enabled: bool | None = None,
 ) -> BucketSnapshot:
     account_bpa = {"allow_blob_public_access": account_allow_blob_public_access}
+    partial: list[str] = []
+    # Access logging requires diagnostic settings we do not fetch — unknown ≠ disabled.
+    if logging_enabled is None:
+        partial.append("logging")
+        logging_flag = False
+    else:
+        logging_flag = logging_enabled
     return BucketSnapshot(
         name=container_name,
         cloud=CloudProvider.AZURE.value,
@@ -68,7 +76,7 @@ def snapshot_azure_container(
         region=region,
         acl=_acl_from_public_access(public_access),
         encryption_enabled=encryption_enabled,
-        logging_enabled=False,
+        logging_enabled=logging_flag,
         versioning_enabled=versioning_enabled,
         block_public_access={
             "public_access": public_access,
@@ -76,6 +84,7 @@ def snapshot_azure_container(
         },
         account_public_access_block=account_bpa,
         tags={"storage_account": storage_account},
+        partial_metadata=partial,
     )
 
 

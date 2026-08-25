@@ -48,7 +48,7 @@ def test_azure_fixture_finds_public_access_rules():
     rules = {item.rule_id for item in findings}
     assert "azure/container-public-access" in rules
     assert "azure/account-public-access-enabled" in rules
-    assert "acl/public-read" in rules
+    assert "acl/public-read" not in rules
 
 
 def test_run_scan_azure_fixture():

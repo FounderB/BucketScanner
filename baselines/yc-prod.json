@@ -1,13 +1,13 @@
 {
   "tool": "bucket-scanner",
   "report_schema": "1.0",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "cloud": "yandex",
   "folder_id": "b1gFAKEFOLDER00000001",
   "scope_ids": [
     "b1gFAKEFOLDER00000001"
   ],
-  "scanned_at": "2026-08-25T16:59:49.337125Z",
+  "scanned_at": "2026-08-25T17:28:58.557508Z",
   "probe_enabled": false,
   "buckets": [
     {
@@ -159,7 +159,7 @@
       "chain_id": "chain/silent-exfil",
       "title": "Silent exfil path",
       "severity": "critical",
-      "message": "Bucket 'prod-backups-open' is exposed while logging and versioning are off \u2014 exfiltration may go unnoticed and objects cannot be rolled back.",
+      "message": "Bucket 'prod-backups-open' is exposed while logging and versioning are off — exfiltration may go unnoticed and objects cannot be rolled back.",
       "rule_ids": [
         "acl/public-read",
         "logging/disabled",
@@ -173,7 +173,7 @@
       "chain_id": "chain/privileged-public-blast",
       "title": "Over-privileged principal meets public storage",
       "severity": "critical",
-      "message": "Bucket 'prod-backups-open' is publicly exposed while an over-privileged service account / IAM principal exists in scope \u2014 blast radius is elevated.",
+      "message": "Bucket 'prod-backups-open' is publicly exposed while an over-privileged service account / IAM principal exists in scope — blast radius is elevated.",
       "rule_ids": [
         "acl/public-read",
         "iam/over-privileged-sa"
@@ -184,22 +184,9 @@
     }
   ],
   "new_findings": [],
-  "new_chains": [
-    {
-      "chain_id": "chain/privileged-public-blast",
-      "title": "Over-privileged principal meets public storage",
-      "severity": "critical",
-      "message": "Bucket 'prod-backups-open' is publicly exposed while an over-privileged service account / IAM principal exists in scope \u2014 blast radius is elevated.",
-      "rule_ids": [
-        "acl/public-read",
-        "iam/over-privileged-sa"
-      ],
-      "buckets": [
-        "prod-backups-open"
-      ]
-    }
-  ],
+  "new_chains": [],
   "suppressed_findings": [],
+  "warnings": [],
   "baseline_path": "baselines/yc-prod.json",
   "summary": {
     "total": 7,
@@ -212,7 +199,7 @@
     "score": 67,
     "buckets_scanned": 2,
     "suppressed": 0,
-    "new": 1,
+    "new": 0,
     "scan_duration_ms": 0
   },
   "method": "fixture"

@@ -38,6 +38,11 @@ RULES: dict[str, dict[str, str]] = {
         "why": "Without BPA, public ACLs and policies can be attached silently.",
         "fix": "Enable all four Block Public Access settings on the bucket and account.",
     },
+    "aws/account-public-access-unknown": {
+        "title": "Account BPA unreadable",
+        "why": "AccessDenied on GetAccountPublicAccessBlock is not the same as BPA being unset.",
+        "fix": "Grant the scanner s3:GetAccountPublicAccessBlock, then re-scan.",
+    },
     "aws/account-public-access-missing": {
         "title": "Account BPA missing",
         "why": "New buckets inherit no account-level public block.",

@@ -25,6 +25,7 @@ from bucket_scanner.checks import (
     apply_overrides,
     check_bucket,
     check_service_accounts,
+    dedupe_account_scoped_findings,
     redact_finding,
 )
 from bucket_scanner.cloud import CloudProvider
@@ -246,7 +247,16 @@ def _collect_aws_data(
     default_region = credentials.region or "us-east-1"
     listing_client = build_aws_s3_client(credentials, region=default_region)
     account_id = resolve_account_id(credentials)
-    account_bpa = get_account_public_access_block(credentials, account_id)
+    account_cfg, account_status = get_account_public_access_block(credentials, account_id)
+    if account_status == "ok":
+        account_bpa: dict | None = account_cfg or {}
+        account_partial = False
+    elif account_status == "missing":
+        account_bpa = {}
+        account_partial = False
+    else:
+        account_bpa = None
+        account_partial = True
     client_cache: dict[str, object] = {default_region: listing_client}
 
     def client_for_region(region: str):
@@ -272,6 +282,11 @@ def _collect_aws_data(
             region=bucket_region,
             account_public_access_block=account_bpa,
         )
+        if account_partial:
+            partial = list(snapshot.partial_metadata)
+            if "account_public_access" not in partial:
+                partial.append("account_public_access")
+            snapshot = snapshot.model_copy(update={"partial_metadata": partial})
         if probe:
             snapshot = probe_bucket(snapshot)
         buckets.append(snapshot)
@@ -348,6 +363,7 @@ def _finalize_report(
     terraform_path: Path | None,
     repo_path: Path | None,
     tracefuse_report: Path | None,
+    started: float,
 ) -> ScanReport:
     findings = []
     for bucket in buckets:
@@ -361,8 +377,10 @@ def _finalize_report(
         findings.extend(load_tracefuse_report(tracefuse_report))
     findings = apply_overrides(findings, config.severity_overrides)
     findings = [redact_finding(item) for item in findings]
+    findings = dedupe_account_scoped_findings(findings)
     chains = compose_chains(buckets, findings)
     summary = _build_summary(findings, chains, buckets_scanned=len(buckets))
+    summary.scan_duration_ms = int((time.perf_counter() - started) * 1000)
     return ScanReport(
         version=__version__,
         cloud=report_cloud,
@@ -451,6 +469,7 @@ def run_scan(
             terraform_path=tf_path,
             repo_path=repo,
             tracefuse_report=tracefuse,
+            started=started,
         )
     elif cloud == CloudProvider.GCS:
         credentials = resolve_credentials(cloud=CloudProvider.GCS)
@@ -486,6 +505,7 @@ def run_scan(
             terraform_path=tf_path,
             repo_path=repo,
             tracefuse_report=tracefuse,
+            started=started,
         )
     else:
         folder_ids = resolve_folder_ids(config, folder_id)
@@ -518,6 +538,7 @@ def run_scan(
             terraform_path=tf_path,
             repo_path=repo,
             tracefuse_report=tracefuse,
+            started=started,
         )
 
     findings = []
@@ -532,6 +553,7 @@ def run_scan(
         findings.extend(load_tracefuse_report(tracefuse))
     findings = apply_overrides(findings, config.severity_overrides)
     findings = [redact_finding(item) for item in findings]
+    findings = dedupe_account_scoped_findings(findings)
     chains = compose_chains(buckets, findings)
 
     scope_ids = [folder] if folder else []

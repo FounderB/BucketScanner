@@ -1,13 +1,13 @@
 {
   "tool": "bucket-scanner",
   "report_schema": "1.0",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "cloud": "azure",
   "folder_id": "sub-FAKE-AZURE-00000001",
   "scope_ids": [
     "sub-FAKE-AZURE-00000001"
   ],
-  "scanned_at": "2026-08-25T16:59:50.101333Z",
+  "scanned_at": "2026-08-25T17:29:00.201388Z",
   "probe_enabled": false,
   "buckets": [
     {
@@ -81,18 +81,6 @@
   ],
   "findings": [
     {
-      "rule_id": "acl/public-read",
-      "title": "Bucket ACL allows anonymous access",
-      "severity": "critical",
-      "message": "Bucket 'prod-backups-open' ACL is 'public-read'.",
-      "bucket": "prod-backups-open",
-      "resource": null,
-      "evidence": {
-        "acl": "public-read"
-      },
-      "remediation": "Set bucket ACL to private and use signed URLs or IAM policies."
-    },
-    {
       "rule_id": "encryption/disabled",
       "title": "Default encryption disabled",
       "severity": "high",
@@ -162,19 +150,8 @@
       "bucket": "prod-backups-open",
       "resource": null,
       "evidence": {
-        "allow_blob_public_access": true
-      },
-      "remediation": "Disable allowBlobPublicAccess on the storage account unless required."
-    },
-    {
-      "rule_id": "azure/account-public-access-enabled",
-      "title": "Storage account allows blob public access",
-      "severity": "high",
-      "message": "Storage account for 'internal-logs-secure' has allowBlobPublicAccess enabled.",
-      "bucket": "internal-logs-secure",
-      "resource": null,
-      "evidence": {
-        "allow_blob_public_access": true
+        "allow_blob_public_access": true,
+        "storage_account": "fakeprodstorage"
       },
       "remediation": "Disable allowBlobPublicAccess on the storage account unless required."
     },
@@ -187,7 +164,7 @@
       "resource": "deploy-sp",
       "evidence": {
         "age_days": 365,
-        "key_id": "azur\u2026id"
+        "key_id": "azur…id"
       },
       "remediation": "Rotate static keys regularly and prefer short-lived IAM tokens."
     }
@@ -197,10 +174,8 @@
       "chain_id": "chain/silent-exfil",
       "title": "Silent exfil path",
       "severity": "critical",
-      "message": "Bucket 'prod-backups-open' is exposed while logging and versioning are off \u2014 exfiltration may go unnoticed and objects cannot be rolled back.",
+      "message": "Bucket 'prod-backups-open' is exposed while logging and versioning are off — exfiltration may go unnoticed and objects cannot be rolled back.",
       "rule_ids": [
-        "acl/public-read",
-        "azure/account-public-access-enabled",
         "azure/container-public-access",
         "logging/disabled",
         "versioning/disabled"
@@ -213,16 +188,17 @@
   "new_findings": [],
   "new_chains": [],
   "suppressed_findings": [],
+  "warnings": [],
   "baseline_path": "baselines/azure-prod.json",
   "summary": {
-    "total": 9,
-    "critical": 1,
-    "high": 5,
+    "total": 7,
+    "critical": 0,
+    "high": 4,
     "medium": 2,
     "low": 1,
     "info": 0,
     "chains": 1,
-    "score": 87,
+    "score": 52,
     "buckets_scanned": 2,
     "suppressed": 0,
     "new": 0,

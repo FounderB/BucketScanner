@@ -66,6 +66,8 @@ def render_human(report: ScanReport, console: Console | None = None) -> None:
                     f"  ! Suppression expires in {days}d: {row.finding.rule_id}",
                     style="yellow",
                 )
+    for warning in report.warnings:
+        out.print(f"  ! {warning}", style="yellow")
     if report.baseline_path:
         out.print(
             f"  NEW vs baseline {report.summary.new}  ({report.baseline_path})",

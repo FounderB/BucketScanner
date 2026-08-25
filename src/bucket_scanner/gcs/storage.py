@@ -53,6 +53,8 @@ def snapshot_gcs_bucket(
     encryption_enabled: bool,
     logging_enabled: bool,
     versioning_enabled: bool,
+    encryption_algorithm: str | None = None,
+    encryption_kms_key_id: str | None = None,
 ) -> BucketSnapshot:
     return BucketSnapshot(
         name=name,
@@ -61,6 +63,8 @@ def snapshot_gcs_bucket(
         region=region,
         acl="public-read" if iam_public else "private",
         encryption_enabled=encryption_enabled,
+        encryption_algorithm=encryption_algorithm,
+        encryption_kms_key_id=encryption_kms_key_id,
         logging_enabled=logging_enabled,
         versioning_enabled=versioning_enabled,
         block_public_access={
@@ -102,6 +106,10 @@ def collect_gcs_buckets(
         except OSError:
             iam_public = False
 
+        # GCS always encrypts at rest; CMEK is optional.
+        kms_key = getattr(bucket, "default_kms_key_name", None) or None
+        encryption_algorithm = "CMEK" if kms_key else "google-managed"
+
         buckets.append(
             snapshot_gcs_bucket(
                 name=name,
@@ -111,6 +119,8 @@ def collect_gcs_buckets(
                 uniform_bucket_level_access=ubla,
                 iam_public=iam_public,
                 encryption_enabled=True,
+                encryption_algorithm=encryption_algorithm,
+                encryption_kms_key_id=kms_key,
                 logging_enabled=bucket.logging is not None,
                 versioning_enabled=bool(bucket.versioning_enabled),
             )
