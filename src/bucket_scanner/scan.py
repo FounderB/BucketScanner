@@ -380,7 +380,7 @@ def _finalize_report(
     findings = dedupe_account_scoped_findings(findings)
     chains = compose_chains(buckets, findings)
     summary = _build_summary(findings, chains, buckets_scanned=len(buckets))
-    summary.scan_duration_ms = int((time.perf_counter() - started) * 1000)
+    summary.scan_duration_ms = _elapsed_ms(started)
     return ScanReport(
         version=__version__,
         cloud=report_cloud,
@@ -558,7 +558,7 @@ def run_scan(
 
     scope_ids = [folder] if folder else []
     summary = _build_summary(findings, chains, buckets_scanned=len(buckets))
-    summary.scan_duration_ms = int((time.perf_counter() - started) * 1000)
+    summary.scan_duration_ms = _elapsed_ms(started)
     return ScanReport(
         version=__version__,
         cloud=report_cloud,
@@ -571,6 +571,14 @@ def run_scan(
         summary=summary,
         method=method,
     )
+
+
+def _elapsed_ms(started: float) -> int:
+    """Wall time in ms; floor at 1 when the scan actually ran (sub-ms fixtures)."""
+    elapsed = (time.perf_counter() - started) * 1000
+    if elapsed <= 0:
+        return 0
+    return max(1, int(elapsed))
 
 
 def _build_summary(findings, chains, *, buckets_scanned: int) -> ScanSummary:

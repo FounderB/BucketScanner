@@ -11,11 +11,11 @@ from click.testing import CliRunner
 from bucket_scanner.chains import compose_chains
 from bucket_scanner.checks import check_bucket, check_service_accounts
 from bucket_scanner.cli import main
-from bucket_scanner.config import load_config, write_default_config
+from bucket_scanner.config import ScanConfig, load_config, write_default_config
 from bucket_scanner.fixture import load_fixture
 from bucket_scanner.models import Severity
 from bucket_scanner.report.sarif import render_sarif
-from bucket_scanner.scan import run_scan, should_fail
+from bucket_scanner.scan import _elapsed_ms, run_scan, should_fail
 
 FIXTURE = Path("examples/demo-vulnerable/fixture.toml")
 
@@ -25,6 +25,20 @@ def test_load_fixture():
     assert folder_id.startswith("b1g")
     assert len(buckets) == 2
     assert len(keys) == 1
+
+
+def test_fixture_scan_reports_nonzero_duration():
+    report = run_scan(folder_id=None, fixture=FIXTURE, config=ScanConfig())
+    assert report.summary.scan_duration_ms is not None
+    assert report.summary.scan_duration_ms >= 1
+
+
+def test_elapsed_ms_floors_sub_millisecond():
+    import time
+
+    started = time.perf_counter()
+    assert _elapsed_ms(started - 0.0004) >= 1
+    assert _elapsed_ms(started) >= 0
 
 
 def test_fixture_finds_public_bucket():
