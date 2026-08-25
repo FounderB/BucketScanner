@@ -96,6 +96,29 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "type": "bargauge",
+      "title": "Findings by rule",
+      "gridPos": {"h": 8, "w": 16, "x": 0, "y": 12},
+      "targets": [
+        {
+          "expr": "bucket_scanner_findings_by_rule{cloud=\"$cloud\",scope_id=\"$scope_id\"}",
+          "legendFormat": "{{rule_id}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Scan duration (ms)",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 12},
+      "targets": [
+        {
+          "expr": "bucket_scanner_scan_duration_ms{cloud=\"$cloud\",scope_id=\"$scope_id\"}",
+          "refId": "A"
+        }
+      ]
     }
   ]
 }

@@ -2,6 +2,17 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [1.7.0] - 2026-08-25
+
+### Added (ops product)
+
+- `suppressed_findings` audit trail in JSON (reason, expires, matched bucket)
+- Suppression `fnmatch` globs for bucket/rule; expiry warnings in human output
+- Hard baseline gate workflow (fails on `summary.new`; no soft continue-on-error)
+- Prometheus `bucket_scanner_findings_by_rule` + `bucket_scanner_scan_duration_ms`
+- Notify `new_only` / `--notify-new-only` with Slack-compatible webhook `blocks`
+- Grafana dashboard panels for per-rule findings and scan duration
+
 ## [1.6.0] - 2026-08-25
 
 ### Added (security depth)
