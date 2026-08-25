@@ -1,0 +1,69 @@
+{
+  "id": "bucket-public-assets",
+  "name": "bucket-public-assets",
+  "folderId": "b1gFOLDEREXAMPLE",
+  "anonymousAccessFlags": {
+    "read": true,
+    "list": false,
+    "configRead": true
+  },
+  "defaultStorageClass": "STANDARD",
+  "versioning": "VERSIONING_DISABLED",
+  "maxSize": "0",
+  "policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "PublicRead",
+        "Effect": "Allow",
+        "Principal": {"AWS": ["*"]},
+        "Action": ["s3:GetObject"],
+        "Resource": ["arn:aws:s3:::bucket-public-assets/*"]
+      }
+    ]
+  },
+  "acl": {
+    "grants": [
+      {
+        "permission": "PERMISSION_FULL_CONTROL",
+        "grantType": "GRANT_TYPE_ACCOUNT",
+        "granteeId": "ajeserviceaccount01"
+      },
+      {
+        "permission": "PERMISSION_READ",
+        "grantType": "GRANT_TYPE_ALL_USERS"
+      }
+    ]
+  },
+  "createdAt": "2024-01-15T10:00:00Z",
+  "cors": [
+    {
+      "id": "browser-exfil",
+      "allowedMethods": ["GET", "HEAD"],
+      "allowedHeaders": ["*"],
+      "allowedOrigins": ["*"],
+      "exposeHeaders": ["ETag"],
+      "maxAgeSeconds": "3600"
+    }
+  ],
+  "websiteSettings": {
+    "index": "index.html",
+    "error": "404.html"
+  },
+  "lifecycleRules": [
+    {
+      "id": "expire-tmp",
+      "enabled": true,
+      "filter": {"prefix": "tmp/"},
+      "expiration": {"days": "7"}
+    }
+  ],
+  "tags": [
+    {"key": "env", "value": "prod"},
+    {"key": "owner", "value": "platform"}
+  ],
+  "encryption": {
+    "rules": []
+  },
+  "resourceId": "e3eresourceid01"
+}

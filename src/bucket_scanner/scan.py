@@ -43,7 +43,8 @@ from bucket_scanner.models import (
 from bucket_scanner.probe import probe_bucket
 from bucket_scanner.secrets import scan_repo
 from bucket_scanner.tracefuse import load_tracefuse_report
-from bucket_scanner.yc.management import YcManagementClient
+from bucket_scanner.yc.enrich import enrich_from_bucket_get
+from bucket_scanner.yc.management import ManagementError, YcManagementClient
 from bucket_scanner.yc.s3 import build_s3_client, snapshot_yandex_bucket
 
 
@@ -66,6 +67,108 @@ def _roles_for_subject(bindings: list[dict], subject_id: str) -> list[str]:
     ]
 
 
+def _anonymous_flags_from_row(row: dict) -> dict[str, bool] | None:
+    raw = row.get("anonymousAccessFlags") or row.get("anonymous_access_flags")
+    if not isinstance(raw, dict):
+        return None
+    flags: dict[str, bool] = {}
+    for key in ("read", "list", "configRead", "config_read"):
+        if key in raw:
+            normalized = "config_read" if key in {"configRead", "config_read"} else key
+            flags[normalized] = bool(raw[key])
+    return flags or None
+
+
+def _versioning_from_row(row: dict) -> bool | None:
+    value = row.get("versioning") or row.get("versioningStatus")
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    text = str(value).upper()
+    return text in {"ENABLED", "VERSIONING_ENABLED", "TRUE"}
+
+
+def _maybe_ephemeral_credentials(
+    management: YcManagementClient,
+    credentials: Credentials,
+) -> Credentials | None:
+    """Mint short-lived S3 keys from IAM token so CI needs no YC_ACCESS_KEY_*."""
+    if credentials.access_key_id and credentials.secret_access_key:
+        return None
+    if not credentials.iam_token:
+        return None
+    try:
+        ephemeral = management.create_ephemeral_access_key(
+            session_name="bucket-scanner-scan",
+            duration_seconds=3600,
+        )
+    except ManagementError:
+        return None
+    access_key_id = ephemeral.get("accessKeyId") or ephemeral.get("access_key_id")
+    secret = ephemeral.get("secret") or ephemeral.get("secretAccessKey")
+    session_token = ephemeral.get("sessionToken") or ephemeral.get("session_token")
+    if not access_key_id or not secret or not session_token:
+        return None
+    return Credentials(
+        cloud=CloudProvider.YANDEX,
+        iam_token=credentials.iam_token,
+        access_key_id=str(access_key_id),
+        secret_access_key=str(secret),
+        session_token=str(session_token),
+        folder_id=credentials.folder_id,
+        cloud_id=credentials.cloud_id,
+        source="ephemeral",
+    )
+
+
+def _enrich_with_bucket_get(
+    management: YcManagementClient,
+    snapshot: BucketSnapshot,
+) -> BucketSnapshot:
+    try:
+        detail = management.get_bucket(snapshot.name, view="VIEW_FULL")
+    except ManagementError:
+        return snapshot
+    return enrich_from_bucket_get(snapshot, detail)
+
+
+def _snapshot_from_inventory_row(
+    row: dict,
+    *,
+    folder_id: str,
+) -> BucketSnapshot:
+    flags = _anonymous_flags_from_row(row)
+    versioning = _versioning_from_row(row)
+    partial: list[str] = []
+    if versioning is None:
+        partial.append("versioning")
+    return BucketSnapshot(
+        name=row["name"],
+        cloud=CloudProvider.YANDEX.value,
+        folder_id=folder_id,
+        metadata_known=False,
+        anonymous_access_flags=flags,
+        versioning_enabled=bool(versioning) if versioning is not None else False,
+        partial_metadata=partial,
+        auth_mode="management-only",
+    )
+
+
+def _merge_inventory_into_snapshot(snapshot: BucketSnapshot, row: dict) -> BucketSnapshot:
+    """Enrich an S3 metadata snapshot with Storage List fields."""
+    updates: dict = {}
+    flags = _anonymous_flags_from_row(row)
+    if flags is not None:
+        updates["anonymous_access_flags"] = flags
+    versioning = _versioning_from_row(row)
+    if versioning is not None and not snapshot.versioning_enabled:
+        updates["versioning_enabled"] = versioning
+    if not updates:
+        return snapshot
+    return snapshot.model_copy(update=updates)
+
+
 def _collect_yandex_data(
     folder_id: str,
     credentials: Credentials,
@@ -77,48 +180,57 @@ def _collect_yandex_data(
         raise ScanError("IAM token is required to list buckets in a folder.")
 
     management = YcManagementClient(credentials.iam_token)
-    bucket_rows = management.list_buckets(folder_id)
-    bindings = management.list_folder_access_bindings(folder_id)
-    has_s3_keys = bool(credentials.access_key_id and credentials.secret_access_key)
+    try:
+        bucket_rows = management.list_buckets(folder_id)
+        bindings = management.list_folder_access_bindings(folder_id)
+        service_accounts = management.list_service_accounts(folder_id)
+    except ManagementError as exc:
+        raise ScanError(str(exc)) from exc
+
+    s3_credentials = credentials
+    auth_mode = "static-keys"
+    if credentials.access_key_id and credentials.secret_access_key:
+        auth_mode = "static-keys"
+    else:
+        ephemeral = _maybe_ephemeral_credentials(management, credentials)
+        if ephemeral is not None:
+            s3_credentials = ephemeral
+            auth_mode = "ephemeral"
+
+    has_s3_keys = bool(s3_credentials.access_key_id and s3_credentials.secret_access_key)
+    s3 = build_s3_client(s3_credentials) if has_s3_keys else None
 
     buckets: list[BucketSnapshot] = []
-    if has_s3_keys:
-        s3 = build_s3_client(credentials)
-        for row in bucket_rows:
-            name = row["name"]
-            if name in ignore:
-                continue
+    for row in bucket_rows:
+        name = row["name"]
+        if name in ignore:
+            continue
+        if s3 is not None:
             snapshot = snapshot_yandex_bucket(s3, name, folder_id=folder_id)
-            if probe:
-                snapshot = probe_bucket(snapshot)
-            buckets.append(snapshot)
-    else:
-        for row in bucket_rows:
-            name = row["name"]
-            if name in ignore:
-                continue
-            snapshot = BucketSnapshot(
-                name=name,
-                cloud=CloudProvider.YANDEX.value,
-                folder_id=folder_id,
-                metadata_known=False,
-            )
-            if probe:
-                snapshot = probe_bucket(snapshot)
-            buckets.append(snapshot)
+            snapshot = _merge_inventory_into_snapshot(snapshot, row)
+            snapshot = snapshot.model_copy(update={"auth_mode": auth_mode})
+        else:
+            snapshot = _snapshot_from_inventory_row(row, folder_id=folder_id)
+        snapshot = _enrich_with_bucket_get(management, snapshot)
+        if probe:
+            snapshot = probe_bucket(snapshot)
+        buckets.append(snapshot)
 
     sa_keys: list[ServiceAccountKeySnapshot] = []
-    for sa in management.list_service_accounts(folder_id):
-        roles = _roles_for_subject(bindings, sa["id"])
-        for key in management.list_access_keys(sa["id"]):
-            sa_keys.append(
-                ServiceAccountKeySnapshot(
-                    sa_id=sa["id"],
-                    key_id=key.get("id"),
-                    age_days=_key_age_days(key.get("createdAt")),
-                    roles=roles,
+    try:
+        for sa in service_accounts:
+            roles = _roles_for_subject(bindings, sa["id"])
+            for key in management.list_access_keys(sa["id"]):
+                sa_keys.append(
+                    ServiceAccountKeySnapshot(
+                        sa_id=sa["id"],
+                        key_id=key.get("id"),
+                        age_days=_key_age_days(key.get("createdAt")),
+                        roles=roles,
+                    )
                 )
-            )
+    except ManagementError as exc:
+        raise ScanError(str(exc)) from exc
     return buckets, sa_keys
 
 

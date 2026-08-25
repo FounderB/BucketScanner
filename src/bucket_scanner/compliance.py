@@ -16,6 +16,12 @@ COMPLIANCE_TAGS: dict[str, list[str]] = {
     "iam/over-privileged-sa": ["CIS-4.2", "NIST-AC-6", "SOC2-CC6.3"],
     "probe/anonymous-list": ["CIS-1.5", "NIST-AC-3"],
     "probe/anonymous-read-confirmed": ["CIS-1.5", "NIST-AC-3"],
+    "yc/anonymous-read-enabled": ["CIS-1.5", "NIST-AC-3", "SOC2-CC6.1"],
+    "yc/anonymous-list-enabled": ["CIS-1.5", "NIST-AC-3"],
+    "yc/anonymous-config-read-enabled": ["NIST-AC-3"],
+    "yc/website-enabled": ["NIST-AC-3", "CIS-1.5"],
+    "yc/cors-enabled": ["NIST-AC-3"],
+    "metadata/partial": ["NIST-AU-6"],
     "aws/block-public-access-incomplete": ["CIS-1.5", "NIST-AC-3"],
     "aws/account-public-access-incomplete": ["CIS-1.5", "NIST-AC-3"],
     "azure/container-public-access": ["CIS-1.5", "NIST-AC-3"],
@@ -118,9 +124,7 @@ def build_compliance_report(report) -> dict[str, Any]:
             for tag in tags:
                 controls.setdefault(tag, []).append(payload)
 
-    summary_controls = {
-        tag: len(items) for tag, items in sorted(controls.items())
-    }
+    summary_controls = {tag: len(items) for tag, items in sorted(controls.items())}
     return {
         "tool": report.tool,
         "version": report.version,
@@ -129,8 +133,7 @@ def build_compliance_report(report) -> dict[str, Any]:
         "scanned_at": report.scanned_at.isoformat(),
         "frameworks": ["cis", "nist_800_53", "soc2"],
         "controls": {
-            tag: {"count": len(items), "findings": items}
-            for tag, items in sorted(controls.items())
+            tag: {"count": len(items), "findings": items} for tag, items in sorted(controls.items())
         },
         "untagged_findings": untagged,
         "summary": {

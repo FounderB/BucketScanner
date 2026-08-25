@@ -208,7 +208,7 @@ def test_scan_profile_baseline_path():
 
 def test_cli_unknown_profile(tmp_path: Path):
     config_path = tmp_path / ".bucket-scanner.toml"
-    config_path.write_text("[scan]\nfolder_id = \"b1gTEST\"\n", encoding="utf-8")
+    config_path.write_text('[scan]\nfolder_id = "b1gTEST"\n', encoding="utf-8")
     runner = CliRunner()
     result = runner.invoke(main, ["scan", "--profile", "missing", "--config", str(config_path)])
     assert result.exit_code == 2

@@ -24,6 +24,10 @@ BOOL_FIELD = re.compile(
     r"\s*=\s*(true|false)",
     re.IGNORECASE,
 )
+ANON_FLAG_FIELD = re.compile(
+    r"^\s*(read|list|config_read)\s*=\s*(true|false)",
+    re.IGNORECASE,
+)
 
 PUBLIC_IAM_MEMBERS = frozenset({"allUsers", "allAuthenticatedUsers"})
 SKIP_EXTENSIONS = {".tfstate", ".terraform"}
@@ -41,6 +45,7 @@ class TerraformBucketIntent:
     bucket: str | None = None
     acl: str | None = None
     block_public_access: dict[str, bool] = field(default_factory=dict)
+    anonymous_access_flags: dict[str, bool] = field(default_factory=dict)
     container_access_type: str | None = None
     public_access_prevention: str | None = None
     uniform_bucket_level_access: bool | None = None
@@ -115,13 +120,14 @@ def parse_terraform_dir(path: Path) -> list[TerraformBucketIntent]:
                     )
                 )
             continue
-        bucket, acl = _parse_bucket_block(block_lines)
+        bucket, acl, anon_flags = _parse_bucket_block(block_lines)
         if bucket:
             intents.append(
                 TerraformBucketIntent(
                     resource_name=resource_name,
                     bucket=bucket,
                     acl=acl or "private",
+                    anonymous_access_flags=anon_flags,
                     source_file=source_file,
                     resource_type=resource_type,
                 )
@@ -196,16 +202,33 @@ def _build_bucket_registry(
 ) -> dict[str, str]:
     registry: dict[str, str] = {}
     for resource_type, resource_name, block_lines, _ in bucket_blocks:
-        bucket, _ = _parse_bucket_block(block_lines)
+        bucket, _, _ = _parse_bucket_block(block_lines)
         if bucket:
             registry[f"{resource_type}.{resource_name}"] = bucket
     return registry
 
 
-def _parse_bucket_block(block_lines: list[str]) -> tuple[str | None, str | None]:
+def _parse_bucket_block(
+    block_lines: list[str],
+) -> tuple[str | None, str | None, dict[str, bool]]:
     bucket: str | None = None
     acl: str | None = None
+    anon_flags: dict[str, bool] = {}
+    in_anon = False
     for line in block_lines:
+        stripped = line.strip()
+        if stripped.startswith("anonymous_access_flags"):
+            in_anon = True
+            continue
+        if in_anon:
+            if stripped == "}":
+                in_anon = False
+                continue
+            flag_match = ANON_FLAG_FIELD.match(line)
+            if flag_match:
+                key, value = flag_match.groups()
+                anon_flags[key.lower()] = value.lower() == "true"
+            continue
         string_match = STRING_FIELD.match(line)
         if string_match:
             key, value = string_match.groups()
@@ -213,7 +236,7 @@ def _parse_bucket_block(block_lines: list[str]) -> tuple[str | None, str | None]
                 bucket = value
             elif key == "acl":
                 acl = value
-    return bucket, acl
+    return bucket, acl, anon_flags
 
 
 def _parse_acl_block(block_lines: list[str]) -> tuple[str | None, str | None]:
@@ -282,6 +305,10 @@ def _dedupe_intents(intents: list[TerraformBucketIntent]) -> list[TerraformBucke
             bucket=intent.bucket,
             acl=intent.acl or current.acl,
             block_public_access={**current.block_public_access, **intent.block_public_access},
+            anonymous_access_flags={
+                **current.anonymous_access_flags,
+                **intent.anonymous_access_flags,
+            },
             container_access_type=intent.container_access_type or current.container_access_type,
             public_access_prevention=(
                 intent.public_access_prevention or current.public_access_prevention

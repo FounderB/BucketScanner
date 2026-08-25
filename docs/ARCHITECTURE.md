@@ -39,7 +39,7 @@ Multi-cloud Object Storage security scanner: metadata APIs, optional anonymous p
 
 ## Credential model
 
-- **YC**: `YC_TOKEN` or SA key file; static keys via `YC_ACCESS_KEY_ID` only (not AWS env aliases)
+- **YC**: `YC_TOKEN` or SA key file; optional static `YC_ACCESS_KEY_*`. Without static keys the scanner mints **ephemeral** AWS-compatible credentials and/or enriches via Storage **Bucket.Get** (`VIEW_FULL`).
 - **AWS**: env keys, session token, or `AWS_PROFILE` / OIDC on GitHub Actions
 - **Azure**: `DefaultAzureCredential`, `AZURE_SUBSCRIPTION_ID` or `--folder-id`
 - **GCS**: Application Default Credentials, `GCP_PROJECT` or `--folder-id`

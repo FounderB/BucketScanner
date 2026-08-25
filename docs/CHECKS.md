@@ -13,12 +13,17 @@
 | `iam/over-privileged-sa` | high | SA has storage.admin on many buckets |
 | `probe/anonymous-list` | critical | Anonymous ListObjects confirmed |
 | `probe/anonymous-read-confirmed` | critical | Anonymous read despite private ACL |
+| `yc/anonymous-read-enabled` | critical | Storage anonymousAccessFlags.read |
+| `yc/anonymous-list-enabled` | critical | Storage anonymousAccessFlags.list |
+| `yc/anonymous-config-read-enabled` | medium | Storage anonymousAccessFlags.configRead |
+| `yc/website-enabled` | medium | Static website hosting configured |
+| `yc/cors-enabled` | medium | CORS rules present on the bucket |
 | `iac/acl-drift` | critical | Terraform private, live public |
 | `iac/shadow-bucket` | high | Live bucket not in Terraform |
 | `iac/ghost-bucket` | medium | Terraform bucket missing live |
 | `iac/bpa-drift` | high | Terraform BPA enabled, live incomplete |
 | `tags/missing-env` | low | Prod-like name without env tag |
-| `metadata/limited` | info | Scan without S3 static keys |
+| `metadata/limited` | info | Inventory-only when Bucket.Get/ephemeral unavailable |
 | `secrets/yc-env-var` | critical | YC credential assignment in repo |
 | `secrets/yc-static-key` | critical | YC static key pattern in repo |
 | `secrets/aws-env-var` | critical | AWS credential assignment in repo |

@@ -35,18 +35,13 @@ def render_prometheus(report: ScanReport) -> str:
     ]
     for severity in ("critical", "high", "medium", "low", "info"):
         count = getattr(report.summary, severity)
-        lines.append(
-            f'bucket_scanner_findings_total{{{labels},severity="{severity}"}} {count}'
-        )
+        lines.append(f'bucket_scanner_findings_total{{{labels},severity="{severity}"}} {count}')
     for chain in report.chains:
         lines.extend(
             [
                 "# HELP bucket_scanner_chain_present Chain detected (1=present)",
                 "# TYPE bucket_scanner_chain_present gauge",
-                (
-                    f'bucket_scanner_chain_present{{{labels},'
-                    f'chain_id="{chain.chain_id}"}} 1'
-                ),
+                (f'bucket_scanner_chain_present{{{labels},chain_id="{chain.chain_id}"}} 1'),
             ]
         )
     return "\n".join(lines) + "\n"

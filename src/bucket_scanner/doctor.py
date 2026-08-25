@@ -62,9 +62,7 @@ def build_doctor_report(
             issues += 1
     elif scan_config.folder_id or scan_config.folder_ids:
         if scan_config.folder_ids:
-            checks.append(
-                _check("folder_ids", "ok", ", ".join(scan_config.folder_ids))
-            )
+            checks.append(_check("folder_ids", "ok", ", ".join(scan_config.folder_ids)))
         else:
             checks.append(_check("folder_id", "ok", scan_config.folder_id or ""))
     else:
@@ -135,13 +133,9 @@ def build_doctor_report(
                 "checks": checks,
             }
         if credentials.subscription_id:
-            checks.append(
-                _check("azure_subscription", "ok", credentials.subscription_id)
-            )
+            checks.append(_check("azure_subscription", "ok", credentials.subscription_id))
         elif scan_config.folder_id:
-            checks.append(
-                _check("azure_subscription", "ok", f"config: {scan_config.folder_id}")
-            )
+            checks.append(_check("azure_subscription", "ok", f"config: {scan_config.folder_id}"))
         else:
             checks.append(
                 _check(
@@ -214,7 +208,7 @@ def build_doctor_report(
         from bucket_scanner.yc.management import YcManagementClient
 
         client = YcManagementClient(credentials.iam_token)
-        if client.ping():
+        if client.ping(folder_id=scan_config.folder_id):
             checks.append(_check("iam_api", "ok", "reachable"))
         else:
             checks.append(_check("iam_api", "error", "unreachable"))
@@ -230,12 +224,21 @@ def build_doctor_report(
 
     if credentials.access_key_id and credentials.secret_access_key:
         checks.append(_check("s3_keys", "ok", "static S3 keys present"))
+    elif credentials.iam_token:
+        checks.append(
+            _check(
+                "s3_keys",
+                "ok",
+                "no static keys — scan will mint ephemeral S3 credentials "
+                "(or fall back to Bucket.Get enrichment)",
+            )
+        )
     else:
         checks.append(
             _check(
                 "s3_keys",
                 "warn",
-                "No static S3 keys — ACL/encryption checks will be limited",
+                "No static S3 keys and no IAM token — metadata checks limited",
             )
         )
 

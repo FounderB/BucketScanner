@@ -2,6 +2,47 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [1.5.0] - 2026-08-25
+
+### Added
+
+- **Bucket.Get enrichment** — ACL, policy, anonymous flags, website, CORS, lifecycle, tags via
+  Storage `GET .../buckets/{name}?view=VIEW_FULL` when S3 keys are missing (or to supplement S3)
+- **Ephemeral S3 credentials** — `CreateEphemeralAccessKey` from IAM token so CI needs only
+  `YC_TOKEN` / `YC_FOLDER_ID` (no stored `YC_ACCESS_KEY_*`)
+- Medium findings: `yc/website-enabled`, `yc/cors-enabled`; `yc/anonymous-config-read-enabled`
+  severity lowered to **medium**
+- VCR fixtures under `tests/fixtures/yc/` with realistic YC JSON + `tests/test_yc_fixtures.py`
+- Snapshot `auth_mode`: `static-keys` | `ephemeral` | `management-only`
+
+### Changed
+
+- Doctor: IAM-token-only is OK (ephemeral / Bucket.Get path) instead of warning about missing static keys
+- Docs: [OIDC.md](docs/OIDC.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [CHECKS.md](docs/CHECKS.md)
+
+## [1.4.0] - 2026-08-25
+
+### Fixed (critical — live Yandex Cloud)
+
+- **Folder access bindings** now call Resource Manager
+  (`resource-manager/.../folders/{id}:listAccessBindings`) instead of the broken IAM path that aborted live scans
+- **Static S3 access keys** listed via `/iam/aws-compatibility/v1/accessKeys` (`accessKeys`), not RSA `/iam/v1/keys`
+- **IAM-token-only scans** consume Storage List `anonymousAccessFlags` → new rules
+  `yc/anonymous-read-enabled`, `yc/anonymous-list-enabled`, `yc/anonymous-config-read-enabled`
+- **`safe_s3_call`** distinguishes AccessDenied vs “not configured” — no more false `encryption/disabled`
+- **Policy Principal** detects `{"AWS": ["*"]}` and nested wildcards
+- **Probe** no longer crashes the scan on network errors; anonymous read works when ACL is unknown
+- **Doctor IAM ping** passes `folderId` (List serviceAccounts requires it)
+- **Terraform ACL drift** dead branch fixed; added `anonymous_access_flags` drift (`iac/yc-anonymous-drift`)
+- Management API errors become `ScanError` instead of raw httpx tracebacks
+- List APIs paginate with `nextPageToken`
+
+### Added
+
+- Contract tests for YC management URLs/response keys (`tests/test_yc_contracts.py`)
+- `metadata/partial` findings when S3 APIs are denied
+- Inventory enrichment of versioning from Storage List when present
+
 ## [1.2.0] - 2026-08-23
 
 ### Added

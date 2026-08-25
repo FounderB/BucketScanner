@@ -33,11 +33,18 @@ def check_bucket(bucket: BucketSnapshot) -> list[Finding]:
                 bucket=bucket.name,
                 evidence={"metadata_known": False},
                 remediation=(
-                    "Provide YC_ACCESS_KEY_ID and YC_SECRET_ACCESS_KEY for full metadata scan."
+                    "Use an IAM token so the scanner can mint ephemeral S3 keys, "
+                    "or provide YC_ACCESS_KEY_* for static keys. "
+                    "Bucket.Get enrichment covers ACL/policy without S3 keys."
                 ),
             )
         )
+        findings.extend(_check_yc_anonymous_flags(bucket))
+        findings.extend(_check_versioning(bucket))
+        findings.extend(_check_yc_website(bucket))
+        findings.extend(_check_yc_cors(bucket))
     else:
+        findings.extend(_check_partial_metadata(bucket))
         findings.extend(_check_acl(bucket))
         findings.extend(_check_policy(bucket))
         findings.extend(_check_encryption(bucket))
@@ -48,6 +55,9 @@ def check_bucket(bucket: BucketSnapshot) -> list[Finding]:
         findings.extend(_check_block_public_access(bucket))
         findings.extend(_check_azure_public_access(bucket))
         findings.extend(_check_gcs_public_access(bucket))
+        findings.extend(_check_yc_anonymous_flags(bucket))
+        findings.extend(_check_yc_website(bucket))
+        findings.extend(_check_yc_cors(bucket))
     findings.extend(_check_probe(bucket))
     return findings
 
@@ -113,9 +123,7 @@ def _is_over_privileged(roles: list[str]) -> bool:
 def _check_acl(bucket: BucketSnapshot) -> list[Finding]:
     if bucket.acl not in PUBLIC_ACL_VALUES:
         return []
-    rule_id = (
-        "acl/public-read-write" if bucket.acl == "public-read-write" else "acl/public-read"
-    )
+    rule_id = "acl/public-read-write" if bucket.acl == "public-read-write" else "acl/public-read"
     return [
         Finding(
             rule_id=rule_id,
@@ -129,8 +137,24 @@ def _check_acl(bucket: BucketSnapshot) -> list[Finding]:
     ]
 
 
+def _principal_is_wildcard(principal) -> bool:
+    if principal == "*":
+        return True
+    if isinstance(principal, str):
+        return principal == "*"
+    if isinstance(principal, list):
+        return any(_principal_is_wildcard(item) for item in principal)
+    if isinstance(principal, dict):
+        for value in principal.values():
+            if _principal_is_wildcard(value):
+                return True
+    return False
+
+
 def _check_policy(bucket: BucketSnapshot) -> list[Finding]:
     if not bucket.policy:
+        return []
+    if "policy" in bucket.partial_metadata:
         return []
     statements = bucket.policy.get("Statement", [])
     for statement in statements:
@@ -138,7 +162,7 @@ def _check_policy(bucket: BucketSnapshot) -> list[Finding]:
         effect = statement.get("Effect")
         if effect != "Allow":
             continue
-        if principal == "*" or principal.get("AWS") == "*":
+        if _principal_is_wildcard(principal):
             return [
                 Finding(
                     rule_id="policy/overly-permissive",
@@ -154,6 +178,21 @@ def _check_policy(bucket: BucketSnapshot) -> list[Finding]:
 
 
 def _check_encryption(bucket: BucketSnapshot) -> list[Finding]:
+    if "encryption" in bucket.partial_metadata:
+        return [
+            Finding(
+                rule_id="metadata/partial",
+                title="Encryption metadata inaccessible",
+                severity=Severity.MEDIUM,
+                message=(
+                    f"Could not read encryption settings for '{bucket.name}' "
+                    "(AccessDenied or API error) — skipped encryption/disabled check."
+                ),
+                bucket=bucket.name,
+                evidence={"partial": "encryption"},
+                remediation="Grant the scanner SA permission to read bucket encryption config.",
+            )
+        ]
     if bucket.encryption_enabled:
         return []
     return [
@@ -170,6 +209,8 @@ def _check_encryption(bucket: BucketSnapshot) -> list[Finding]:
 
 
 def _check_logging(bucket: BucketSnapshot) -> list[Finding]:
+    if "logging" in bucket.partial_metadata:
+        return []
     if bucket.logging_enabled:
         return []
     return [
@@ -186,6 +227,8 @@ def _check_logging(bucket: BucketSnapshot) -> list[Finding]:
 
 
 def _check_versioning(bucket: BucketSnapshot) -> list[Finding]:
+    if "versioning" in bucket.partial_metadata:
+        return []
     if bucket.versioning_enabled:
         return []
     return [
@@ -310,9 +353,7 @@ def _check_azure_public_access(bucket: BucketSnapshot) -> list[Finding]:
                 rule_id="azure/container-public-access",
                 title="Azure container allows anonymous blob access",
                 severity=Severity.HIGH,
-                message=(
-                    f"Container '{bucket.name}' public access is set to '{public_access}'."
-                ),
+                message=(f"Container '{bucket.name}' public access is set to '{public_access}'."),
                 bucket=bucket.name,
                 evidence={"public_access": public_access},
                 remediation=(
@@ -327,9 +368,7 @@ def _check_azure_public_access(bucket: BucketSnapshot) -> list[Finding]:
                 rule_id="azure/account-public-access-enabled",
                 title="Storage account allows blob public access",
                 severity=Severity.HIGH,
-                message=(
-                    f"Storage account for '{bucket.name}' has allowBlobPublicAccess enabled."
-                ),
+                message=(f"Storage account for '{bucket.name}' has allowBlobPublicAccess enabled."),
                 bucket=bucket.name,
                 evidence={"allow_blob_public_access": True},
                 remediation="Disable allowBlobPublicAccess on the storage account unless required.",
@@ -367,9 +406,7 @@ def _check_gcs_public_access(bucket: BucketSnapshot) -> list[Finding]:
                 rule_id="gcs/public-access-prevention-not-enforced",
                 title="GCS public access prevention not enforced",
                 severity=Severity.HIGH,
-                message=(
-                    f"Bucket '{bucket.name}' public access prevention is '{effective_pap}'."
-                ),
+                message=(f"Bucket '{bucket.name}' public access prevention is '{effective_pap}'."),
                 bucket=bucket.name,
                 evidence={"public_access_prevention": effective_pap},
                 remediation="Set publicAccessPrevention=enforced on project or bucket.",
@@ -406,14 +443,15 @@ def _check_probe(bucket: BucketSnapshot) -> list[Finding]:
                 remediation="Remove public ACL/policy and verify with --probe after fix.",
             )
         )
-    elif bucket.anonymous_readable and bucket.acl == "private":
+    elif bucket.anonymous_readable and bucket.acl in {None, "private", "unknown"}:
         findings.append(
             Finding(
                 rule_id="probe/anonymous-read-confirmed",
                 title="Anonymous read confirmed despite private ACL",
                 severity=Severity.CRITICAL,
                 message=(
-                    f"Bucket '{bucket.name}' is reachable anonymously while ACL says private."
+                    f"Bucket '{bucket.name}' is reachable anonymously while ACL says "
+                    f"'{bucket.acl or 'unknown'}'."
                 ),
                 bucket=bucket.name,
                 evidence={"anonymous_readable": True, "acl": bucket.acl},
@@ -421,6 +459,120 @@ def _check_probe(bucket: BucketSnapshot) -> list[Finding]:
             )
         )
     return findings
+
+
+def _check_partial_metadata(bucket: BucketSnapshot) -> list[Finding]:
+    if not bucket.partial_metadata:
+        return []
+    # encryption already emits metadata/partial; summarize other gaps once.
+    other = [item for item in bucket.partial_metadata if item != "encryption"]
+    if not other:
+        return []
+    return [
+        Finding(
+            rule_id="metadata/partial",
+            title="Partial bucket metadata",
+            severity=Severity.LOW,
+            message=(f"Some APIs were denied for '{bucket.name}': {', '.join(sorted(other))}."),
+            bucket=bucket.name,
+            evidence={"partial_metadata": sorted(other)},
+            remediation="Grant the scanner SA read access to ACL, policy, and logging APIs.",
+        )
+    ]
+
+
+def _check_yc_anonymous_flags(bucket: BucketSnapshot) -> list[Finding]:
+    if bucket.cloud != "yandex" or not bucket.anonymous_access_flags:
+        return []
+    flags = bucket.anonymous_access_flags
+    findings: list[Finding] = []
+    if flags.get("read"):
+        findings.append(
+            Finding(
+                rule_id="yc/anonymous-read-enabled",
+                title="Yandex anonymous read enabled",
+                severity=Severity.CRITICAL,
+                message=(
+                    f"Bucket '{bucket.name}' has anonymousAccessFlags.read=true "
+                    "(visible via Storage API without S3 keys)."
+                ),
+                bucket=bucket.name,
+                evidence={"anonymous_access_flags": flags},
+                remediation="Disable anonymous read in the Yandex console or Terraform.",
+            )
+        )
+    if flags.get("list"):
+        findings.append(
+            Finding(
+                rule_id="yc/anonymous-list-enabled",
+                title="Yandex anonymous list enabled",
+                severity=Severity.CRITICAL,
+                message=(f"Bucket '{bucket.name}' has anonymousAccessFlags.list=true."),
+                bucket=bucket.name,
+                evidence={"anonymous_access_flags": flags},
+                remediation="Disable anonymous list; prefer signed URLs for object access.",
+            )
+        )
+    if flags.get("config_read"):
+        findings.append(
+            Finding(
+                rule_id="yc/anonymous-config-read-enabled",
+                title="Yandex anonymous config read enabled",
+                severity=Severity.MEDIUM,
+                message=(
+                    f"Bucket '{bucket.name}' exposes configuration anonymously "
+                    "(anonymousAccessFlags.configRead)."
+                ),
+                bucket=bucket.name,
+                evidence={"anonymous_access_flags": flags},
+                remediation="Disable configRead anonymous access flag.",
+            )
+        )
+    return findings
+
+
+def _check_yc_website(bucket: BucketSnapshot) -> list[Finding]:
+    if bucket.cloud != "yandex" or not bucket.website_enabled:
+        return []
+    return [
+        Finding(
+            rule_id="yc/website-enabled",
+            title="Yandex static website hosting enabled",
+            severity=Severity.MEDIUM,
+            message=(
+                f"Bucket '{bucket.name}' has website hosting enabled — "
+                "objects may be reachable via the website endpoint."
+            ),
+            bucket=bucket.name,
+            evidence={"website_enabled": True},
+            remediation=(
+                "Disable website hosting unless the bucket is intentionally public static content; "
+                "prefer CDN with signed origins for private assets."
+            ),
+        )
+    ]
+
+
+def _check_yc_cors(bucket: BucketSnapshot) -> list[Finding]:
+    if bucket.cloud != "yandex" or not bucket.cors_rules:
+        return []
+    return [
+        Finding(
+            rule_id="yc/cors-enabled",
+            title="Yandex CORS rules configured",
+            severity=Severity.MEDIUM,
+            message=(
+                f"Bucket '{bucket.name}' has {len(bucket.cors_rules)} CORS rule(s) — "
+                "overly broad AllowedOrigins can expose objects to browser exfiltration."
+            ),
+            bucket=bucket.name,
+            evidence={"cors_rule_count": len(bucket.cors_rules), "cors_rules": bucket.cors_rules},
+            remediation=(
+                "Restrict AllowedOrigins to known frontends; avoid '*' with credentials "
+                "or sensitive buckets."
+            ),
+        )
+    ]
 
 
 def apply_overrides(findings: list[Finding], overrides: dict[str, Severity]) -> list[Finding]:

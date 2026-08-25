@@ -1,0 +1,6 @@
+{
+  "accessKeyId": "YCAJephemeralExample01",
+  "secret": "YCNsEphemeralSecretExampleDoNotUseInProd0123456789",
+  "sessionToken": "t1.9euelZqYnJqTnZiZnJqYnJqTnZiZnJ8.ephemeralSessionTokenExampleValueForVCRFixturesOnly",
+  "expiresAt": "2026-08-25T18:00:00Z"
+}

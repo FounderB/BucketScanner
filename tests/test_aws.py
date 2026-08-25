@@ -114,9 +114,10 @@ def test_list_bucket_names():
 
 @patch("bucket_scanner.aws.s3.safe_s3_call")
 def test_get_account_public_access_block(mock_safe):
-    mock_safe.return_value = {
-        "PublicAccessBlockConfiguration": {"BlockPublicAcls": True}
-    }
+    mock_safe.return_value = (
+        {"PublicAccessBlockConfiguration": {"BlockPublicAcls": True}},
+        None,
+    )
     credentials = MagicMock(profile=None, region="us-east-1")
     credentials.access_key_id = None
     credentials.secret_access_key = None
@@ -142,14 +143,14 @@ def test_snapshot_aws_bucket_merges_account_bpa(mock_snapshot):
 @patch("bucket_scanner.s3_common.safe_s3_call")
 def test_snapshot_bucket_aws_sets_bpa(mock_safe):
     mock_safe.side_effect = [
-        {"Grants": []},
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        {"PublicAccessBlockConfiguration": {"BlockPublicAcls": True}},
+        ({"Grants": []}, None),
+        (None, "NoSuchBucketPolicy"),
+        (None, "ServerSideEncryptionConfigurationNotFoundError"),
+        (None, None),
+        (None, None),
+        (None, "NoSuchLifecycleConfiguration"),
+        (None, "NoSuchTagSet"),
+        ({"PublicAccessBlockConfiguration": {"BlockPublicAcls": True}}, None),
     ]
     client = MagicMock()
     snapshot = snapshot_bucket(
@@ -263,8 +264,7 @@ def test_resolve_account_id(mock_sts):
 def test_config_loads_cloud_aws(tmp_path: Path):
     config_path = tmp_path / ".bucket-scanner.toml"
     config_path.write_text(
-        '[scan]\ncloud = "aws"\naws_region = "eu-central-1"\n'
-        'terraform_path = "terraform-aws"\n',
+        '[scan]\ncloud = "aws"\naws_region = "eu-central-1"\nterraform_path = "terraform-aws"\n',
         encoding="utf-8",
     )
     cfg = load_config(config_path)
@@ -280,9 +280,7 @@ def test_iam_over_privileged_policy(mock_session):
 
     iam = MagicMock()
     mock_session.return_value.client.return_value = iam
-    iam.get_paginator.return_value.paginate.return_value = [
-        {"Users": [{"UserName": "deploy-bot"}]}
-    ]
+    iam.get_paginator.return_value.paginate.return_value = [{"Users": [{"UserName": "deploy-bot"}]}]
     iam.list_attached_user_policies.return_value = {
         "AttachedPolicies": [{"PolicyName": "AmazonS3FullAccess"}]
     }
