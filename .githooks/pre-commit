@@ -3,7 +3,8 @@
 
 set -eu
 
-author=$(git var GIT_AUTHOR_IDENT 2>/dev/null || true)
+# GIT_AUTHOR_IDENT is "Name <email> timestamp tz" — compare identity only.
+author=$(git var GIT_AUTHOR_IDENT 2>/dev/null | sed -E 's/ [0-9]+ [+-][0-9]+$//' || true)
 expected='FounderB <314388178+FounderB@users.noreply.github.com>'
 
 if [ "$author" != "$expected" ]; then

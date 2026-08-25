@@ -1,0 +1,20 @@
+#!/bin/sh
+# Drop injected Co-authored-by trailers before the commit object is created.
+
+set -eu
+
+msg_file=$1
+
+tmp=$(mktemp)
+grep -viE '^[[:space:]]*Co-authored-by:[[:space:]]*Cursor[[:space:]]*<' "$msg_file" \
+  | grep -viE '^[[:space:]]*Co-authored-by:[[:space:]].*@cursor\.com' \
+  | awk '
+      { lines[NR] = $0 }
+      END {
+        end = NR
+        while (end > 0 && lines[end] ~ /^[[:space:]]*$/) end--
+        for (i = 1; i <= end; i++) print lines[i]
+        if (end > 0) print ""
+      }
+    ' >"$tmp"
+mv "$tmp" "$msg_file"
