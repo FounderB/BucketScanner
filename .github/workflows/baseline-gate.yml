@@ -33,6 +33,17 @@ jobs:
           json-path: report-${{ matrix.profile }}.json
           compliance-report-path: compliance-${{ matrix.profile }}.json
           run-doctor: "false"
-        continue-on-error: true
-      - name: Verify baseline delta passed
+      - name: Assert gate produced a report
         run: test -s report-${{ matrix.profile }}.json
+      - name: Fail when baseline delta has new findings
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          path = "report-${{ matrix.profile }}.json"
+          report = json.load(open(path, encoding="utf-8"))
+          new_count = report.get("summary", {}).get("new", 0)
+          if new_count:
+              print(f"FAIL: {new_count} new finding(s)/chain(s) vs baseline", file=sys.stderr)
+              sys.exit(1)
+          print("OK: no new findings vs baseline")
+          PY

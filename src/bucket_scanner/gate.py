@@ -2,12 +2,20 @@
 
 from __future__ import annotations
 
+import fnmatch
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
 
 from bucket_scanner.chains import compose_chains
-from bucket_scanner.models import SEVERITY_WEIGHT, ChainFinding, Finding, ScanReport, ScanSummary
+from bucket_scanner.models import (
+    SEVERITY_WEIGHT,
+    ChainFinding,
+    Finding,
+    ScanReport,
+    ScanSummary,
+    SuppressedFinding,
+)
 
 
 @dataclass(frozen=True)
@@ -23,10 +31,15 @@ class Suppression:
             current = today or datetime.now(tz=UTC).date()
             if self.expires < current:
                 return False
-        if finding.rule_id != self.rule:
+        if finding.rule_id != self.rule and not fnmatch.fnmatch(finding.rule_id, self.rule):
             return False
-        if self.bucket is not None and finding.bucket != self.bucket:
-            return False
+        if self.bucket is not None:
+            name = finding.bucket or ""
+            if any(ch in self.bucket for ch in "*?["):
+                if not fnmatch.fnmatch(name, self.bucket):
+                    return False
+            elif name != self.bucket:
+                return False
         if self.resource is not None and finding.resource != self.resource:
             return False
         return True
@@ -54,17 +67,44 @@ def load_baseline_report(path: Path) -> ScanReport:
 def apply_suppressions(
     findings: list[Finding],
     suppressions: list[Suppression],
-) -> tuple[list[Finding], int]:
+    *,
+    today: date | None = None,
+) -> tuple[list[Finding], list[SuppressedFinding], list[str]]:
+    """Return kept findings, audit trail, and expiry warning messages."""
     if not suppressions:
-        return findings, 0
+        return findings, [], []
     kept: list[Finding] = []
-    suppressed = 0
+    suppressed_rows: list[SuppressedFinding] = []
+    warnings: list[str] = []
+    current = today or datetime.now(tz=UTC).date()
+
+    for rule in suppressions:
+        if rule.expires is not None:
+            days_left = (rule.expires - current).days
+            if 0 <= days_left <= 14:
+                warnings.append(
+                    f"Suppression {rule.rule} "
+                    f"({rule.bucket or '*'}) expires in {days_left} day(s) "
+                    f"({rule.expires.isoformat()})"
+                )
+
     for finding in findings:
-        if any(item.matches(finding) for item in suppressions):
-            suppressed += 1
+        matched = next(
+            (item for item in suppressions if item.matches(finding, today=current)),
+            None,
+        )
+        if matched is None:
+            kept.append(finding)
             continue
-        kept.append(finding)
-    return kept, suppressed
+        suppressed_rows.append(
+            SuppressedFinding(
+                finding=finding,
+                reason=matched.reason,
+                expires=matched.expires.isoformat() if matched.expires else None,
+                matched_bucket=matched.bucket,
+            )
+        )
+    return kept, suppressed_rows, warnings
 
 
 def compute_delta(
@@ -86,7 +126,7 @@ def apply_gate(
     suppressions: list[Suppression],
     baseline_path: Path | None = None,
 ) -> ScanReport:
-    findings, suppressed = apply_suppressions(report.findings, suppressions)
+    findings, suppressed_rows, _warnings = apply_suppressions(report.findings, suppressions)
     chains = compose_chains(report.buckets, findings)
 
     new_findings: list[Finding] = []
@@ -100,8 +140,10 @@ def apply_gate(
         baseline_label = str(baseline_path)
 
     summary = _build_summary(findings, chains, buckets_scanned=report.summary.buckets_scanned)
-    summary.suppressed = suppressed
+    summary.suppressed = len(suppressed_rows)
     summary.new = len(new_findings) + len(new_chains)
+    if report.summary.scan_duration_ms is not None:
+        summary.scan_duration_ms = report.summary.scan_duration_ms
 
     return report.model_copy(
         update={
@@ -109,6 +151,7 @@ def apply_gate(
             "chains": chains,
             "new_findings": new_findings,
             "new_chains": new_chains,
+            "suppressed_findings": suppressed_rows,
             "baseline_path": baseline_label,
             "summary": summary,
         }

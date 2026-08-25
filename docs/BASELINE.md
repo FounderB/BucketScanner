@@ -33,6 +33,7 @@ Reports include `report_schema = "1.0"` plus:
 | Field | Description |
 |-------|-------------|
 | `findings` | Active findings after suppressions |
+| `suppressed_findings` | Audit trail: finding + reason + expires |
 | `new_findings` | Delta vs baseline (empty without baseline) |
 | `new_chains` | New misconfig chains vs baseline |
 | `summary.suppressed` | Findings removed by policy |
@@ -49,16 +50,28 @@ rule = "logging/disabled"
 bucket = "public-assets-cdn"
 reason = "CDN origin — ticket SEC-42"
 expires = "2026-12-31"
+
+[[scan.suppressions]]
+rule = "versioning/disabled"
+bucket = "temp-*"
+reason = "Ephemeral staging fleet"
+expires = "2026-06-30"
 ```
 
-Optional fields: `resource`, `expires` (ISO date). Expired suppressions are ignored automatically.
+Optional fields: `resource`, `expires` (ISO date). `bucket` and `rule` accept `fnmatch` globs (`temp-*`, `aws/*`). Expired suppressions are ignored automatically. JSON reports keep an audit list in `suppressed_findings` (reason + expires). Human output warns when a suppression expires within 14 days.
 
 Suppressions apply before baseline comparison and recompose chains on remaining findings.
+
+### Refreshing baselines (trusted main only)
+
+1. Review current findings on `main` after an intentional accept.
+2. Run with `--write-baseline baselines/<cloud>-prod.json` in a **manual** workflow (not on every PR).
+3. Commit the baseline JSON; subsequent PRs use `--fail-on new` via [baseline-gate.yml](../.github/workflows/baseline-gate.yml) (hard fail — no `continue-on-error`).
 
 ## GitHub Action
 
 ```yaml
-- uses: FounderB/BucketScanner/action@v1.5.0
+- uses: FounderB/BucketScanner/action@v1.6.0
   with:
     profile: yc-prod
     fail-on: new
@@ -73,3 +86,5 @@ When `serve` runs with baseline/suppressions configured:
 
 - `bucket_scanner_suppressed_total`
 - `bucket_scanner_new_total`
+- `bucket_scanner_findings_by_rule{rule_id=...}`
+- `bucket_scanner_scan_duration_ms`

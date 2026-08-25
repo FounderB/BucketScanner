@@ -41,9 +41,9 @@ Imported findings use rule IDs prefixed with `tracefuse/` and appear in SARIF co
 ## GitHub Action
 
 ```yaml
-- uses: FounderB/BucketScanner/action@v1.5.0
+- uses: FounderB/BucketScanner/action@v1.6.0
   with:
-    version: "1.5.0"
+    version: "1.6.0"
     profile: stack-fixture
     config-path: examples/ci/.bucket-scanner.toml
     tracefuse-report: tracefuse-report.json

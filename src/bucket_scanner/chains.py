@@ -38,9 +38,7 @@ def compose_chains(
     chains: list[ChainFinding] = []
     by_bucket: dict[str, list[Finding]] = {}
     global_rules = {finding.rule_id for finding in findings}
-    global_privileged = [
-        finding for finding in findings if finding.rule_id in PRIVILEGED_RULES
-    ]
+    global_privileged = [finding for finding in findings if finding.rule_id in PRIVILEGED_RULES]
 
     for finding in findings:
         if finding.bucket:
@@ -84,7 +82,8 @@ def compose_chains(
             )
 
         if is_public and (rule_ids & PRIVILEGED_RULES or global_privileged):
-            priv_rules = sorted((rule_ids & PRIVILEGED_RULES) | {f.rule_id for f in global_privileged})
+            priv_ids = {f.rule_id for f in global_privileged}
+            priv_rules = sorted((rule_ids & PRIVILEGED_RULES) | priv_ids)
             pub_rules = sorted(rule_ids & PUBLIC_RULES)
             chains.append(
                 ChainFinding(
@@ -92,8 +91,9 @@ def compose_chains(
                     title="Over-privileged principal meets public storage",
                     severity=Severity.CRITICAL,
                     message=(
-                        f"Bucket '{bucket.name}' is publicly exposed while an over-privileged "
-                        "service account / IAM principal exists in scope — blast radius is elevated."
+                        f"Bucket '{bucket.name}' is publicly exposed while an "
+                        "over-privileged service account / IAM principal exists "
+                        "in scope — blast radius is elevated."
                     ),
                     rule_ids=sorted(set(priv_rules + pub_rules)),
                     buckets=[bucket.name],

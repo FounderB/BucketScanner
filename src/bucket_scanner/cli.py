@@ -261,6 +261,11 @@ def doctor(
     help="Send configured webhook/Telegram alerts.",
 )
 @click.option(
+    "--notify-new-only/--notify-all",
+    default=None,
+    help="Notify only new findings vs baseline (requires --baseline).",
+)
+@click.option(
     "--compliance-report",
     type=click.Path(path_type=Path),
     help="Write compliance control aggregation JSON.",
@@ -288,6 +293,7 @@ def scan(
     telegram_token: str | None,
     telegram_chat_id: str | None,
     notify: bool,
+    notify_new_only: bool | None,
     quiet: bool,
     compliance_report: Path | None,
 ) -> None:
@@ -361,6 +367,7 @@ def scan(
         telegram_bot_token=telegram_token or app_config.notify.telegram_bot_token,
         telegram_chat_id=telegram_chat_id or app_config.notify.telegram_chat_id,
         min_severity=app_config.notify.min_severity,
+        new_only=(notify_new_only if notify_new_only is not None else app_config.notify.new_only),
     )
     if notify or webhook or (telegram_token and telegram_chat_id):
         sent = notify_all(report, notify_config)

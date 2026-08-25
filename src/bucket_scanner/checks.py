@@ -48,6 +48,7 @@ def check_bucket(bucket: BucketSnapshot) -> list[Finding]:
         findings.extend(_check_acl(bucket))
         findings.extend(_check_policy(bucket))
         findings.extend(_check_encryption(bucket))
+        findings.extend(_check_object_lock(bucket))
         findings.extend(_check_logging(bucket))
         findings.extend(_check_versioning(bucket))
         findings.extend(_check_lifecycle(bucket))
@@ -193,17 +194,68 @@ def _check_encryption(bucket: BucketSnapshot) -> list[Finding]:
                 remediation="Grant the scanner SA permission to read bucket encryption config.",
             )
         ]
-    if bucket.encryption_enabled:
+    findings: list[Finding] = []
+    if not bucket.encryption_enabled:
+        findings.append(
+            Finding(
+                rule_id="encryption/disabled",
+                title="Default encryption disabled",
+                severity=Severity.HIGH,
+                message=f"Bucket '{bucket.name}' has no default server-side encryption.",
+                bucket=bucket.name,
+                evidence={"encryption_enabled": False},
+                remediation="Enable default server-side encryption (SSE-S3 or SSE-KMS).",
+            )
+        )
+        return findings
+    algo = (bucket.encryption_algorithm or "").upper()
+    if algo in {"AES256", "AES256-GCM"} and PROD_LIKE.search(bucket.name):
+        findings.append(
+            Finding(
+                rule_id="encryption/sse-s3-only",
+                title="Prod-like bucket uses SSE-S3 without KMS",
+                severity=Severity.MEDIUM,
+                message=(
+                    f"Bucket '{bucket.name}' encrypts with {bucket.encryption_algorithm} "
+                    "(no customer-managed KMS/CMEK key)."
+                ),
+                bucket=bucket.name,
+                evidence={
+                    "encryption_algorithm": bucket.encryption_algorithm,
+                    "encryption_kms_key_id": bucket.encryption_kms_key_id,
+                },
+                remediation=(
+                    "Prefer SSE-KMS / CMEK with a managed key for production and backup buckets."
+                ),
+            )
+        )
+    return findings
+
+
+def _check_object_lock(bucket: BucketSnapshot) -> list[Finding]:
+    if bucket.object_lock_enabled is None:
+        return []
+    if "object_lock" in bucket.partial_metadata:
+        return []
+    if bucket.object_lock_enabled:
+        return []
+    if not PROD_LIKE.search(bucket.name):
         return []
     return [
         Finding(
-            rule_id="encryption/disabled",
-            title="Default encryption disabled",
-            severity=Severity.HIGH,
-            message=f"Bucket '{bucket.name}' has no default server-side encryption.",
+            rule_id="object-lock/disabled",
+            title="Object Lock disabled on prod-like bucket",
+            severity=Severity.MEDIUM,
+            message=(
+                f"Bucket '{bucket.name}' looks production-related but Object Lock / WORM "
+                "is not enabled."
+            ),
             bucket=bucket.name,
-            evidence={"encryption_enabled": False},
-            remediation="Enable default server-side encryption (SSE-S3 or SSE-KMS).",
+            evidence={"object_lock_enabled": False},
+            remediation=(
+                "Enable Object Lock (compliance or governance mode) on backup/archive buckets "
+                "to resist ransomware deletion."
+            ),
         )
     ]
 
@@ -292,16 +344,32 @@ def _check_block_public_access(bucket: BucketSnapshot) -> list[Finding]:
     if bucket.cloud != "aws":
         return []
     findings: list[Finding] = []
-    config = bucket.block_public_access or {}
-    if config and not all(
-        config.get(key, False)
-        for key in (
-            "BlockPublicAcls",
-            "IgnorePublicAcls",
-            "BlockPublicPolicy",
-            "RestrictPublicBuckets",
+    if "block_public_access" in bucket.partial_metadata:
+        return findings
+
+    bpa_keys = (
+        "BlockPublicAcls",
+        "IgnorePublicAcls",
+        "BlockPublicPolicy",
+        "RestrictPublicBuckets",
+    )
+    config = bucket.block_public_access
+    if config is None or config == {}:
+        findings.append(
+            Finding(
+                rule_id="aws/block-public-access-missing",
+                title="S3 Block Public Access not configured",
+                severity=Severity.HIGH,
+                message=(
+                    f"Bucket '{bucket.name}' has no Block Public Access configuration — "
+                    "public ACLs/policies are not blocked at the bucket layer."
+                ),
+                bucket=bucket.name,
+                evidence={"block_public_access": None},
+                remediation="Enable all four Block Public Access settings on the bucket.",
+            )
         )
-    ):
+    elif not all(config.get(key, False) for key in bpa_keys):
         findings.append(
             Finding(
                 rule_id="aws/block-public-access-incomplete",
@@ -315,16 +383,26 @@ def _check_block_public_access(bucket: BucketSnapshot) -> list[Finding]:
                 remediation="Enable all four Block Public Access settings on the bucket.",
             )
         )
-    account = bucket.account_public_access_block or {}
-    if account and not all(
-        account.get(key, False)
-        for key in (
-            "BlockPublicAcls",
-            "IgnorePublicAcls",
-            "BlockPublicPolicy",
-            "RestrictPublicBuckets",
+
+    account = bucket.account_public_access_block
+    if account is None or account == {}:
+        findings.append(
+            Finding(
+                rule_id="aws/account-public-access-missing",
+                title="Account-level Block Public Access not configured",
+                severity=Severity.HIGH,
+                message=(
+                    "AWS account has no S3 Block Public Access configuration — "
+                    "new buckets may be publicly exposable."
+                ),
+                bucket=bucket.name,
+                evidence={"account_public_access_block": None},
+                remediation=(
+                    "Enable account-level S3 Block Public Access in AWS console or org policy."
+                ),
+            )
         )
-    ):
+    elif not all(account.get(key, False) for key in bpa_keys):
         findings.append(
             Finding(
                 rule_id="aws/account-public-access-incomplete",
@@ -431,6 +509,7 @@ def _check_gcs_public_access(bucket: BucketSnapshot) -> list[Finding]:
 
 def _check_probe(bucket: BucketSnapshot) -> list[Finding]:
     findings: list[Finding] = []
+    evidence_base = dict(bucket.probe_evidence or {})
     if bucket.anonymous_listable:
         findings.append(
             Finding(
@@ -439,11 +518,11 @@ def _check_probe(bucket: BucketSnapshot) -> list[Finding]:
                 severity=Severity.CRITICAL,
                 message=f"Bucket '{bucket.name}' allows anonymous ListObjects.",
                 bucket=bucket.name,
-                evidence={"anonymous_listable": True},
+                evidence={**evidence_base, "anonymous_listable": True},
                 remediation="Remove public ACL/policy and verify with --probe after fix.",
             )
         )
-    elif bucket.anonymous_readable and bucket.acl in {None, "private", "unknown"}:
+    if bucket.anonymous_readable and bucket.acl in {None, "private", "unknown"}:
         findings.append(
             Finding(
                 rule_id="probe/anonymous-read-confirmed",
@@ -454,7 +533,7 @@ def _check_probe(bucket: BucketSnapshot) -> list[Finding]:
                     f"'{bucket.acl or 'unknown'}'."
                 ),
                 bucket=bucket.name,
-                evidence={"anonymous_readable": True, "acl": bucket.acl},
+                evidence={**evidence_base, "anonymous_readable": True, "acl": bucket.acl},
                 remediation="Declared vs real mismatch — inspect bucket policy and CDN origin.",
             )
         )

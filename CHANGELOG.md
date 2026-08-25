@@ -2,6 +2,17 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [1.6.0] - 2026-08-25
+
+### Added (security depth)
+
+- AWS **missing** Block Public Access (bucket + account) → HIGH
+  (`aws/block-public-access-missing`, `aws/account-public-access-missing`)
+- Cross-cloud `PUBLIC_RULES` (Azure/GCS/AWS missing BPA) for silent-exfil chains
+- `chain/privileged-public-blast` — over-privileged SA + public exposure
+- `encryption/sse-s3-only`, `object-lock/disabled` for prod-like buckets
+- Probe evidence (HTTP status, cloud-aware list parsers, YC website endpoint)
+
 ## [1.5.0] - 2026-08-25
 
 ### Added

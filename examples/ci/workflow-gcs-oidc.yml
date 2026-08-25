@@ -31,7 +31,7 @@ jobs:
         with:
           workload_identity_provider: projects/123456789/locations/global/workloadIdentityPools/github/providers/github
           service_account: bucket-scanner@my-project.iam.gserviceaccount.com
-      - uses: FounderB/BucketScanner/action@v1.5.0
+      - uses: FounderB/BucketScanner/action@v1.6.0
         with:
           profile: gcs-prod
           config-path: .bucket-scanner.toml

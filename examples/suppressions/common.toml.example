@@ -14,6 +14,6 @@ expires = "2026-12-31"
 
 [[scan.suppressions]]
 rule = "versioning/disabled"
-bucket = "temp-uploads"
-reason = "Ephemeral upload staging — lifecycle enforced separately"
+bucket = "temp-*"
+reason = "Ephemeral upload staging fleet — lifecycle enforced separately"
 expires = "2026-06-30"

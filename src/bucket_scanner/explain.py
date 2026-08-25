@@ -23,6 +23,26 @@ RULES: dict[str, dict[str, str]] = {
         "why": "Objects at rest rely on platform defaults only; compliance gaps remain.",
         "fix": "Enable default SSE on the bucket.",
     },
+    "encryption/sse-s3-only": {
+        "title": "SSE-S3 without KMS",
+        "why": "AES256 without a customer-managed key weakens key custody and audit for prod data.",
+        "fix": "Switch production buckets to SSE-KMS / CMEK.",
+    },
+    "object-lock/disabled": {
+        "title": "Object Lock disabled",
+        "why": "Ransomware or privileged delete can wipe versions without WORM retention.",
+        "fix": "Enable Object Lock on backup/archive buckets.",
+    },
+    "aws/block-public-access-missing": {
+        "title": "Block Public Access missing",
+        "why": "Without BPA, public ACLs and policies can be attached silently.",
+        "fix": "Enable all four Block Public Access settings on the bucket and account.",
+    },
+    "aws/account-public-access-missing": {
+        "title": "Account BPA missing",
+        "why": "New buckets inherit no account-level public block.",
+        "fix": "Enable account-level S3 Block Public Access.",
+    },
     "logging/disabled": {
         "title": "Access logging disabled",
         "why": "You cannot reconstruct who accessed or exfiltrated data after an incident.",
@@ -165,6 +185,11 @@ RULES: dict[str, dict[str, str]] = {
             "Rotate exposed cloud credentials, remove secrets from git history, "
             "close public access."
         ),
+    },
+    "chain/privileged-public-blast": {
+        "title": "Privileged principal + public bucket",
+        "why": "Over-privileged SA combined with public exposure multiplies blast radius.",
+        "fix": "Drop storage.admin / broad IAM; close public ACL/policy/anonymous flags.",
     },
     "secrets/yc-env-var": {
         "title": "YC credential in repo",

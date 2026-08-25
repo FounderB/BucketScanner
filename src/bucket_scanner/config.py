@@ -95,6 +95,7 @@ class NotifyConfig:
     telegram_bot_token: str | None = None
     telegram_chat_id: str | None = None
     min_severity: Severity = Severity.HIGH
+    new_only: bool = False
 
 
 @dataclass
@@ -279,6 +280,7 @@ def load_config(path: Path | None = None) -> AppConfig:
             if notify_data.get("telegram_chat_id") is not None
             else None,
             min_severity=_parse_severity(notify_data.get("min_severity", "high")),
+            new_only=bool(notify_data.get("new_only", False)),
         ),
         serve=ServeConfig(
             addr=serve_data.get("addr", "127.0.0.1:9090"),

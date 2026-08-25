@@ -6,6 +6,8 @@
 | `acl/public-read-write` | critical | Bucket ACL allows anonymous write |
 | `policy/overly-permissive` | high | Bucket policy wider than expected |
 | `encryption/disabled` | high | Default encryption not enabled |
+| `encryption/sse-s3-only` | medium | Prod-like bucket uses AES256 without KMS |
+| `object-lock/disabled` | medium | Object Lock off on prod-like bucket |
 | `logging/disabled` | medium | Access logging off |
 | `versioning/disabled` | medium | Object versioning off |
 | `lifecycle/aggressive-expiration` | medium | Short retention on prod-like bucket |
@@ -18,12 +20,19 @@
 | `yc/anonymous-config-read-enabled` | medium | Storage anonymousAccessFlags.configRead |
 | `yc/website-enabled` | medium | Static website hosting configured |
 | `yc/cors-enabled` | medium | CORS rules present on the bucket |
+| `aws/block-public-access-missing` | high | No bucket BPA configuration |
+| `aws/account-public-access-missing` | high | No account BPA configuration |
+| `aws/block-public-access-incomplete` | high | S3 bucket Block Public Access incomplete |
+| `aws/account-public-access-incomplete` | high | Account Block Public Access incomplete |
 | `iac/acl-drift` | critical | Terraform private, live public |
 | `iac/shadow-bucket` | high | Live bucket not in Terraform |
 | `iac/ghost-bucket` | medium | Terraform bucket missing live |
 | `iac/bpa-drift` | high | Terraform BPA enabled, live incomplete |
 | `tags/missing-env` | low | Prod-like name without env tag |
 | `metadata/limited` | info | Inventory-only when Bucket.Get/ephemeral unavailable |
+| `chain/privileged-public-blast` | critical | Over-priv SA + public exposure |
+| `chain/silent-exfil` | critical | public-read + no-logging + no-versioning |
+| `chain/leaked-credentials-exposure` | critical | repo secrets + public bucket |
 | `secrets/yc-env-var` | critical | YC credential assignment in repo |
 | `secrets/yc-static-key` | critical | YC static key pattern in repo |
 | `secrets/aws-env-var` | critical | AWS credential assignment in repo |
@@ -38,7 +47,5 @@
 | `secrets/azure-env-var` | critical | Azure credential assignment in repo |
 | `iac/no-buckets-declared` | info | No storage resources in Terraform path |
 | `tracefuse/*` | varies | Imported Tracefuse cloud-related finding |
-| `chain/leaked-credentials-exposure` | critical | repo secrets + public bucket |
-| `chain/silent-exfil` | critical | public-read + no-logging + no-versioning |
 
 Use `bucket-scanner explain <rule-id>` for remediation steps.

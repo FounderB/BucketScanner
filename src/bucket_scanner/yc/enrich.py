@@ -150,6 +150,19 @@ def enrich_from_bucket_get(snapshot: BucketSnapshot, detail: dict[str, Any]) -> 
             updates["encryption_enabled"] = enabled
         elif enabled and not snapshot.encryption_enabled:
             updates["encryption_enabled"] = True
+        if enabled and isinstance(rules, list) and rules:
+            first = rules[0] if isinstance(rules[0], dict) else {}
+            algo = first.get("sseAlgorithm") or first.get("SSEAlgorithm")
+            key_id = first.get("kmsMasterKeyId") or first.get("KMSMasterKeyID")
+            if algo:
+                updates["encryption_algorithm"] = str(algo)
+            if key_id:
+                updates["encryption_kms_key_id"] = str(key_id)
+
+    lock = detail.get("objectLock") or detail.get("object_lock")
+    if isinstance(lock, dict):
+        status = str(lock.get("status") or lock.get("ObjectLockEnabled") or "").upper()
+        updates["object_lock_enabled"] = status in {"ENABLED", "OBJECT_LOCK_ENABLED", "TRUE"}
 
     # Management enrichment is enough to run ACL/policy/anonymous checks.
     if snapshot.metadata_known is False and (

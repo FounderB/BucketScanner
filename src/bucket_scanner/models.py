@@ -62,11 +62,15 @@ class BucketSnapshot(BaseModel):
     acl: str | None = None
     policy: dict[str, Any] | None = None
     encryption_enabled: bool = False
+    encryption_algorithm: str | None = None  # AES256 | aws:kms | ...
+    encryption_kms_key_id: str | None = None
+    object_lock_enabled: bool | None = None
     logging_enabled: bool = False
     versioning_enabled: bool = False
     lifecycle_rules: list[dict[str, Any]] = Field(default_factory=list)
     anonymous_listable: bool | None = None
     anonymous_readable: bool | None = None
+    probe_evidence: dict[str, Any] = Field(default_factory=dict)
     anonymous_access_flags: dict[str, bool] | None = None
     website_enabled: bool = False
     cors_rules: list[dict[str, Any]] = Field(default_factory=list)
@@ -76,6 +80,13 @@ class BucketSnapshot(BaseModel):
     account_public_access_block: dict[str, Any] | None = None
     tags: dict[str, str] = Field(default_factory=dict)
     auth_mode: str | None = None  # static-keys | ephemeral | management-only
+
+
+class SuppressedFinding(BaseModel):
+    finding: Finding
+    reason: str = ""
+    expires: str | None = None
+    matched_bucket: str | None = None
 
 
 class ServiceAccountKeySnapshot(BaseModel):
@@ -97,6 +108,7 @@ class ScanSummary(BaseModel):
     buckets_scanned: int = 0
     suppressed: int = 0
     new: int = 0
+    scan_duration_ms: int | None = None
 
 
 class ScanReport(BaseModel):
@@ -113,6 +125,7 @@ class ScanReport(BaseModel):
     chains: list[ChainFinding] = Field(default_factory=list)
     new_findings: list[Finding] = Field(default_factory=list)
     new_chains: list[ChainFinding] = Field(default_factory=list)
+    suppressed_findings: list[SuppressedFinding] = Field(default_factory=list)
     baseline_path: str | None = None
     summary: ScanSummary = Field(default_factory=ScanSummary)
     method: str = "metadata"
