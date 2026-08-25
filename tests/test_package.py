@@ -8,7 +8,7 @@ from bucket_scanner import __version__
 
 
 def test_version_matches_package():
-    assert __version__ == "1.8.1"
+    assert __version__ == "1.9.0"
     try:
         installed = version("bucket-scanner")
     except PackageNotFoundError:

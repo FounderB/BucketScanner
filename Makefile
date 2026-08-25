@@ -1,4 +1,4 @@
-.PHONY: install hooks test lint audit build check-package scan-demo aws-demo diff-demo clean
+.PHONY: install hooks test lint audit build check-package scan-demo live-proof aws-demo diff-demo clean
 
 install:
 	python3 -m venv .venv
@@ -39,6 +39,10 @@ gcs-demo:
 
 scan-demo:
 	.venv/bin/bucket-scanner scan --fixture examples/demo-vulnerable/fixture.toml
+
+live-proof:
+	chmod +x scripts/live_proof.sh
+	./scripts/live_proof.sh
 
 diff-demo:
 	.venv/bin/bucket-scanner diff examples/demo-vulnerable/terraform \

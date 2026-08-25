@@ -1,0 +1,14 @@
+# Proof logs — field calibration for Bucket Scanner
+#
+# Workflow:
+#   1. ./scripts/live_proof.sh                 # fixture rehearsal
+#   2. YC_TOKEN=… ./scripts/live_proof.sh --live --folder-id b1g…
+#   3. Triage: bucket-scanner proof-log set --log proofs/fp-log.jsonl \
+#        --fingerprint '…' --status false_positive|confirmed|accepted_risk|fixed
+#
+# Commit fp-log.jsonl only when you intentionally track known FP/accepted risk.
+# Local run artifacts stay in proofs/runs/ (gitignored).
+
+fp-log.jsonl
+!fp-log.example.jsonl
+runs/
