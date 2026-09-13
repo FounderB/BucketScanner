@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/AWS-S3-FF9900?style=flat-square" alt="AWS S3"/>
   <img src="https://img.shields.io/badge/SARIF-2.1.0-2ee6a6?style=flat-square" alt="SARIF 2.1.0"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-5eead4?style=flat-square" alt="MIT"/></a>
-  <img src="https://img.shields.io/badge/stable-v1.9.1-2ee6a6?style=flat-square" alt="v1.9"/>
+  <img src="https://img.shields.io/badge/stable-v1.9.2-2ee6a6?style=flat-square" alt="v1.9"/>
 </p>
 
 <p align="center">
@@ -79,7 +79,7 @@ Part of the **FounderB security stack**: [Tracefuse](https://github.com/FounderB
 
 ```bash
 pip install bucket-scanner
-# pin: pip install bucket-scanner==1.9.0
+# pin: pip install bucket-scanner==1.9.2
 bucket-scanner --help
 ```
 
@@ -175,6 +175,8 @@ bucket-scanner scan --folder-id "$YC_FOLDER_ID" --probe --fail-on high
 bucket-scanner doctor                           # creds, scopes, API reachability
 bucket-scanner explain acl/public-read          # remediation + why
 ```
+
+Live YC (`doctor` / `scan` against a real folder) needs `YC_TOKEN` (and usually `YC_FOLDER_ID`) — fixture smoke does not.
 
 > **Probe mode** sends unauthenticated HTTP requests to bucket endpoints to verify real-world exposure. It never downloads object payloads — only checks reachability metadata.
 

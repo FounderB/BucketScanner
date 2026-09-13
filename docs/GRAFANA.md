@@ -13,7 +13,7 @@ bucket-scanner serve ──► :9090/metrics ◄── Prometheus scrape ──�
 ## 1. Install on Ubuntu Server (lab VM)
 
 ```bash
-pip install 'bucket-scanner==1.7.1'
+pip install 'bucket-scanner==1.9.2'
 cp examples/ci/.bucket-scanner.prod.toml.example .bucket-scanner.toml
 # edit folder_ids / secrets
 ```

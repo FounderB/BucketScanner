@@ -2,6 +2,13 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [1.9.2] - 2026-09-13
+
+### Fixed
+
+- Document that live YC `doctor` / `scan` needs `YC_TOKEN` (fixture smoke does not)
+- Examples, Action docs, and CI templates pin `1.9.2` (was stale `1.7.1` / `1.9.0`)
+
 ## [1.9.1] - 2026-09-13
 
 ### Fixed
