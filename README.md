@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/AWS-S3-FF9900?style=flat-square" alt="AWS S3"/>
   <img src="https://img.shields.io/badge/SARIF-2.1.0-2ee6a6?style=flat-square" alt="SARIF 2.1.0"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-5eead4?style=flat-square" alt="MIT"/></a>
-  <img src="https://img.shields.io/badge/stable-v1.9.0-2ee6a6?style=flat-square" alt="v1.9"/>
+  <img src="https://img.shields.io/badge/stable-v1.9.1-2ee6a6?style=flat-square" alt="v1.9"/>
 </p>
 
 <p align="center">

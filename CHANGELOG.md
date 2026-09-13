@@ -2,6 +2,14 @@
 
 All notable changes to Bucket Scanner are documented here.
 
+## [1.9.1] - 2026-09-13
+
+### Fixed
+
+- Scheduled fixture smoke (`scheduled-scan.yml`) treats vulnerable-fixture exit 1 as success when the JSON report has findings (no longer looks like a red CI failure)
+- `SECURITY.md` supported versions table covers 1.9.x
+- `docs/AUDIT.md` header aligned to v1.9.0; removed stale “PyPI pending” note
+
 ## [1.9.0] - 2026-08-25
 
 ### Added (live proof)

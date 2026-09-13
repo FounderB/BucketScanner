@@ -29,16 +29,55 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Scan profile
-        uses: ./action
+      - name: Install
+        run: pip install .
+      - name: Fixture smoke (expect findings)
+        env:
+          PROFILE: ${{ github.event.inputs.profile || 'yc-fixture' }}
+        run: |
+          set +e
+          bucket-scanner scan \
+            --profile "$PROFILE" \
+            --config examples/ci/.bucket-scanner.toml \
+            --fail-on high \
+            --sarif bucket-scanner.sarif \
+            --prometheus bucket-scanner.prom \
+            --compliance-report compliance.json \
+            --json -q > bucket-scanner.json
+          rc=$?
+          set -e
+          # Vulnerable demo fixtures should trip --fail-on high (exit 1).
+          if [ "$rc" -eq 0 ]; then
+            echo "unexpected clean scan for fixture profile $PROFILE"
+            exit 1
+          fi
+          if [ "$rc" -ne 1 ]; then
+            echo "unexpected exit code $rc (expected 1 for findings)"
+            exit 1
+          fi
+          python3 <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          path = Path("bucket-scanner.json")
+          if not path.is_file():
+              print("missing bucket-scanner.json", file=sys.stderr)
+              sys.exit(1)
+          data = json.loads(path.read_text(encoding="utf-8"))
+          findings = data.get("findings") or []
+          total = int(data.get("summary", {}).get("total", len(findings)))
+          if total < 1:
+              print("expected findings in vulnerable fixture report", file=sys.stderr)
+              sys.exit(1)
+          print(f"ok: fixture smoke found {total} findings (exit 1 → success)")
+          PY
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
         with:
-          profile: ${{ github.event.inputs.profile || 'yc-fixture' }}
-          config-path: examples/ci/.bucket-scanner.toml
-          fail-on: high
-          sarif-path: bucket-scanner.sarif
-          json-path: bucket-scanner.json
-          prometheus-path: bucket-scanner.prom
-          compliance-report-path: compliance.json
+          sarif_file: bucket-scanner.sarif
+        continue-on-error: true
       - name: Upload JSON report
         if: always()
         uses: actions/upload-artifact@v4
@@ -48,3 +87,4 @@ jobs:
             bucket-scanner.json
             bucket-scanner.prom
             bucket-scanner.sarif
+            compliance.json
