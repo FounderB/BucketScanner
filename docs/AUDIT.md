@@ -1,6 +1,6 @@
 # Security audit log
 
-Manual and automated checks run against Bucket Scanner **v1.9.0**.
+Manual and automated checks run against Bucket Scanner **v1.9.2**.
 
 ## Automated (CI / local `make audit`)
 
